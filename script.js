@@ -1,5 +1,8 @@
 // script.js
-
+window.onerror = function(msg, url, line, col, error) {
+  document.getElementById('debug').textContent =
+    "Erreur JS : " + msg + "\nLigne: " + line + "\n" + (error ? error.stack : "");
+};
 console.log("script.js chargé."); // Log au chargement du script
 
 const MATIERES_BASE_PATH = 'matieres';
