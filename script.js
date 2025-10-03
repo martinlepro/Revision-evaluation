@@ -7,36 +7,47 @@ console.log("script.js chargé."); // Log au chargement du script
 
 const MATIERES_BASE_PATH = 'matieres';
 let config = {};
-let selectedItems = []; // Tableau pour stocker les chemins des fichiers JSON sélectionnés
+let selectedItems = []; // Tableau pour stocker les objets de sélection { path, typeToGenerate, displayName }
 let currentQuizData = []; // Données des questions pour le quiz actuel
 let currentQuestionIndex = 0;
 
 // URL de votre serveur proxy sécurisé sur Render (avec les NOUVELLES routes)
-const BASE_API_URL = 'https://cle-api.onrender.com'; 
-const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
-const GENERATION_API_URL = `${BASE_API_URL}/generation`; // Nouvelle route non utilisée par défaut ici, mais prête.
+const BASE_API_URL = 'https://cle-api.onrender.com';
+const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
+const GENERATION_API_URL = `${BASE_API_URL}/generation`;
 
 console.log("BASE_API_URL:", BASE_API_URL);
 console.log("CORRECTION_API_URL:", CORRECTION_API_URL);
 console.log("GENERATION_API_URL:", GENERATION_API_URL);
 
 
-// --- Gestion de la structure des matières (Simulée) ---
-
-// Structure codée en dur, incluant l'Allemand
+// --- Gestion de la structure des matières ---
+// Chaque leçon est maintenant un objet qui spécifie le type de contenu à générer
+// et pointe vers un fichier .txt
 const STRUCTURE = {
     "Mathematiques": {
-        "Nombres_Premiers": ["QCM_1.json"],
-        "Les_Aires": ["QCM_Aires.json"]
+        "Nombres_Premiers": [
+            { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" }
+        ],
+        "Les_Aires": [
+            { name: "Leçon Les Aires", file: "lecon_les_aires.txt", type: "qcm" }
+        ]
     },
     "Histoire_Geo": {
-        "La_Revolution_Francaise": ["Paragraphe_Argumente_1.json"],
-        "Les_Fleuves_du_Monde": ["QCM_Geographie.json"]
+        "La_Revolution_Francaise": [
+            { name: "Leçon Révolution Française", file: "lecon_revolution_francaise.txt", type: "paragraphe_ia" }
+        ],
+        "Les_Fleuves_du_Monde": [
+            { name: "Leçon Fleuves du Monde", file: "lecon_fleuves_monde.txt", type: "qcm" }
+        ]
     },
-    // NOUVEAU : Ajout de la matière Allemand
     "Allemand": {
-        "Vocabulaire_Facile": ["QCM_Vocabulaire_Facile.json"],
-        "Grammaire_Base": ["QCM_Grammaire_Base.json"]
+        "Vocabulaire_Facile": [
+            { name: "Leçon Vocabulaire Facile", file: "lecon_vocabulaire_facile.txt", type: "qcm" }
+        ],
+        "Grammaire_Base": [
+            { name: "Leçon Grammaire de Base", file: "lecon_grammaire_base.txt", type: "qcm" }
+        ]
     }
 };
 
@@ -78,20 +89,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
     
-    // NOUVEAU : Ajout des écouteurs pour les boutons de génération IA
+    // Ajout des écouteurs pour les boutons de génération IA aléatoire
     const generateQCMBtn = document.getElementById('generate-qcm-btn');
     const generateParagrapheBtn = document.getElementById('generate-paragraphe-btn');
 
     if (generateQCMBtn) {
         generateQCMBtn.addEventListener('click', () => generateContentFromAI('qcm'));
-        console.log("Écouteur pour 'Générer QCM' attaché.");
+        console.log("Écouteur pour 'Générer QCM Aléatoire' attaché.");
     } else {
         console.warn("Bouton 'generate-qcm-btn' non trouvé.");
     }
 
     if (generateParagrapheBtn) {
         generateParagrapheBtn.addEventListener('click', () => generateContentFromAI('paragraphe_ia'));
-        console.log("Écouteur pour 'Générer Paragraphe' attaché.");
+        console.log("Écouteur pour 'Générer Paragraphe Aléatoire' attaché.");
     } else {
         console.warn("Bouton 'generate-paragraphe-btn' non trouvé.");
     }
@@ -124,22 +135,24 @@ function loadStructure() {
             chapitreLi.innerHTML = `<h3>${chapitre.replace(/_/g, ' ')}</h3>`; // Affiche le nom sans underscore
 
             const itemsList = document.createElement('ul');
-            STRUCTURE[matiere][chapitre].forEach(item => {
-                console.log("    Ajout de l'élément:", item);
+            STRUCTURE[matiere][chapitre].forEach(itemConfig => { // itemConfig est maintenant { name, file, type }
+                console.log("    Ajout de l'élément de leçon:", itemConfig.name, "(type:", itemConfig.type, ")");
                 const itemLi = document.createElement('li');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 
-                // Chemin complet du fichier
-                const fullPath = `${MATIERES_BASE_PATH}/${matiere}/${chapitre}/${item}`;
-                checkbox.value = fullPath;
-                checkbox.id = fullPath;
+                // Chemin complet du fichier de la leçon
+                const fullPath = `${MATIERES_BASE_PATH}/${matiere}/${chapitre}/${itemConfig.file}`;
+                // Stocker l'objet complet de la sélection dans la valeur de la checkbox
+                checkbox.value = JSON.stringify({ path: fullPath, typeToGenerate: itemConfig.type, displayName: itemConfig.name });
+                checkbox.id = fullPath.replace(/[^a-zA-Z0-9]/g, '_'); // ID unique et valide pour HTML
                 
                 checkbox.addEventListener('change', updateSelection);
 
                 const label = document.createElement('label');
-                label.htmlFor = fullPath;
-                label.textContent = item;
+                label.htmlFor = checkbox.id; // Lier le label à l'ID de la checkbox
+                label.textContent = itemConfig.name; // Afficher le nom convivial
+                label.title = `Générera un ${itemConfig.type.replace('_ia', '')} à partir de cette leçon.`;
 
                 itemLi.appendChild(checkbox);
                 itemLi.appendChild(label);
@@ -157,19 +170,20 @@ function loadStructure() {
 }
 
 function updateSelection(event) {
-    const path = event.target.value;
+    const selectionData = JSON.parse(event.target.value); // Parser l'objet stocké
     if (event.target.checked) {
-        selectedItems.push(path);
-        console.log("Sélection ajoutée:", path);
+        selectedItems.push(selectionData);
+        console.log("Sélection ajoutée:", selectionData);
     } else {
-        selectedItems = selectedItems.filter(item => item !== path);
-        console.log("Sélection retirée:", path);
+        selectedItems = selectedItems.filter(item => item.path !== selectionData.path);
+        console.log("Sélection retirée:", selectionData);
     }
     console.log("Éléments actuellement sélectionnés:", selectedItems);
     
     const selectionDisplay = document.getElementById('selected-items');
     if (selectionDisplay) {
-        selectionDisplay.textContent = selectedItems.map(p => p.split('/').slice(-3).join(' > ')).join(' | ');
+        // Afficher quelque chose de significatif, ex: "QCM from Leçon Nombres Premiers"
+        selectionDisplay.textContent = selectedItems.map(s => `${s.typeToGenerate.replace('_ia', '').toUpperCase()} from "${s.displayName}"`).join(' | ');
     } else {
         console.warn("Élément 'selected-items' non trouvé pour l'affichage de la sélection.");
     }
@@ -180,51 +194,111 @@ function updateSelection(event) {
 async function startQuiz() {
     console.log("Démarrage de la fonction startQuiz.");
     if (selectedItems.length === 0) {
-        alert("Veuillez sélectionner au moins un chapitre/quiz à commencer !");
+        alert("Veuillez sélectionner au moins une leçon à partir de laquelle générer !");
         console.warn("startQuiz annulé: aucun élément sélectionné.");
         return;
     }
     
     const selectionView = document.getElementById('selection-view');
     const quizView = document.getElementById('quiz-view');
-    if (selectionView && quizView) {
-        selectionView.style.display = 'none';
-        quizView.style.display = 'block';
-        console.log("Passage de la vue de sélection à la vue de quiz.");
-    } else {
-        console.error("Éléments 'selection-view' ou 'quiz-view' non trouvés.");
+    const generationFeedbackDiv = document.getElementById('ai-generation-feedback'); // Pour les messages de génération
+    
+    if (!(selectionView && quizView && generationFeedbackDiv)) {
+        console.error("Éléments 'selection-view', 'quiz-view' ou 'ai-generation-feedback' non trouvés.");
         return;
     }
-
-    currentQuizData = [];
     
-    for (const itemPath of selectedItems) {
+    // Afficher la vue du quiz et les messages de génération en attendant
+    selectionView.style.display = 'none';
+    quizView.style.display = 'block';
+    generationFeedbackDiv.style.display = 'block'; // S'assurer qu'il est visible pendant la génération
+    generationFeedbackDiv.innerHTML = '<p>🧠 Préparation des questions par l\'IA...</p>';
+
+    currentQuizData = []; // Réinitialise les données du quiz
+
+    for (const selection of selectedItems) { // Chaque sélection est un objet { path, typeToGenerate, displayName }
+        generationFeedbackDiv.innerHTML = `<p>🧠 Génération de ${selection.typeToGenerate.replace('_ia', '').toUpperCase()} à partir de la leçon "${selection.displayName}"...</p>`;
         try {
-            console.log("Chargement du fichier JSON:", itemPath);
-            const response = await fetch(itemPath);
+            console.log("Chargement du contenu de la leçon depuis:", selection.path);
+            const response = await fetch(selection.path);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status} for ${itemPath}`);
+                throw new Error(`HTTP error! status: ${response.status} for ${selection.path}`);
             }
-            let data = await response.json();
-            console.log("Données chargées pour", itemPath, ":", data);
-            
-            if (Array.isArray(data)) {
-                currentQuizData.push(...data);
+            const lessonContent = await response.text(); // Lit le contenu comme du texte brut
+            console.log("Contenu de la leçon chargé (début):", lessonContent.substring(0, Math.min(lessonContent.length, 100)) + (lessonContent.length > 100 ? "..." : ""));
+
+            // Préparer le prompt pour l'IA, incluant le contenu de la leçon
+            let promptTextForGeneration;
+            if (selection.typeToGenerate === 'qcm') {
+                promptTextForGeneration = `Vous êtes un générateur de quiz pour des élèves de 3ème. Créez UN QCM de niveau collège (3ème) avec 4 options de réponse et une explication pour la bonne réponse, en vous basant STRICTEMENT et UNIQUEMENT sur le texte de la leçon ci-dessous. Le QCM doit être au format JSON prêt à être utilisé par mon application. Répondez UNIQUEMENT avec l'objet JSON.
+                Leçon:\n${lessonContent}\n
+                Exemple de format : { "type": "qcm", "question": "...", "options": ["...","...","...","..."], "reponse_correcte": "...", "explication": "..." }`;
+            } else if (selection.typeToGenerate === 'paragraphe_ia') {
+                promptTextForGeneration = `Vous êtes un concepteur de sujets d'examen pour des élèves de 3ème. Générez UN sujet de paragraphe argumenté de niveau collège (3ème) en vous basant STRICTEMENT et UNIQUEMENT sur le texte de la leçon ci-dessous. Incluez 3 à 4 attendus pour ce paragraphe et une consigne spécifique pour la correction par l'IA. Répondez UNIQUEMENT avec l'objet JSON.
+                Leçon:\n${lessonContent}\n
+                Exemple de format : { "type": "paragraphe_ia", "sujet": "...", "attendus": ["...", "...", "..."], "consigne_ia": "Corrigez ce paragraphe argumenté d'un élève de 3ème. Donnez une note sur 10 et des commentaires constructifs sur l'argumentation, la structure et la maîtrise du sujet." }`;
             } else {
-                currentQuizData.push(data);
+                console.warn("Type de génération inconnu pour la sélection:", selection);
+                generationFeedbackDiv.innerHTML += `<p class="error">❌ Type de génération inconnu pour "${selection.displayName}".</p>`;
+                continue; // Passe à l'élément suivant
+            }
+
+            console.log("Appel à l'API de génération avec la leçon. Prompt (début):", promptTextForGeneration.substring(0, Math.min(promptTextForGeneration.length, 200)) + (promptTextForGeneration.length > 200 ? "..." : ""));
+            const aiGeneratedResponse = await fetch(GENERATION_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: promptTextForGeneration }),
+            });
+
+            console.log("Réponse de l'API de génération reçue pour leçon. Statut:", aiGeneratedResponse.status);
+
+            if (!aiGeneratedResponse.ok) {
+                const errorData = await aiGeneratedResponse.json().catch(() => ({error: 'Réponse AI non-JSON ou vide.'}));
+                throw new Error(`Erreur API Render lors de la génération (status ${aiGeneratedResponse.status}): ${errorData.error || aiGeneratedResponse.statusText}`);
+            }
+
+            const aiData = await aiGeneratedResponse.json();
+            console.log("Données de l'API de génération parsées pour leçon:", aiData);
+            
+            if (aiData.generated_content) {
+                console.log("Chaîne JSON générée par l'IA à partir de leçon:", aiData.generated_content);
+                const generatedQuestion = JSON.parse(aiData.generated_content);
+                
+                // Si l'IA renvoie un tableau de questions (ex: pour un QCM multiple), ou un seul objet
+                if (Array.isArray(generatedQuestion)) {
+                    currentQuizData.push(...generatedQuestion);
+                } else {
+                    currentQuizData.push(generatedQuestion);
+                }
+                console.log("Question(s) générée(s) par l'IA à partir de la leçon:", generatedQuestion);
+            } else {
+                console.error("Réponse de génération AI incomplète: 'generated_content' manquant pour leçon.", aiData);
+                generationFeedbackDiv.innerHTML += `<p class="error">❌ Échec de génération pour "${selection.displayName}".</p>`;
             }
         } catch (error) {
-            console.error(`Erreur de chargement ou de parsing JSON pour ${itemPath}:`, error);
+            console.error(`Erreur lors du traitement de la leçon "${selection.displayName}":`, error);
+            generationFeedbackDiv.innerHTML += `<p class="error">❌ Erreur grave pour "${selection.displayName}": ${error.message}</p>`;
         }
     }
     
-    // Mélanger les questions
-    currentQuizData.sort(() => Math.random() - 0.5);
-    console.log("Questions chargées et mélangées. Total:", currentQuizData.length, "questions.");
+    generationFeedbackDiv.innerHTML = ''; // Nettoyer les messages de génération après tout
+    generationFeedbackDiv.style.display = 'none'; // Cacher le feedback une fois la génération terminée
+
+    if (currentQuizData.length === 0) {
+        alert("Aucune question n'a pu être générée. Veuillez vérifier vos sélections ou l'API de génération.");
+        // Revenir à la vue de sélection ou afficher un message d'erreur persistant
+        quizView.style.display = 'none';
+        selectionView.style.display = 'block';
+        console.warn("startQuiz terminé: aucune question générée.");
+        return;
+    }
+
+    currentQuizData.sort(() => Math.random() - 0.5); // Mélanger les questions générées
+    console.log("Toutes les questions des leçons ont été générées et mélangées. Total:", currentQuizData.length, "questions.");
 
     currentQuestionIndex = 0;
     displayCurrentQuestion();
-    console.log("Quiz démarré avec la première question.");
+    console.log("Quiz démarré avec la première question générée.");
 }
 
 function displayCurrentQuestion() {
@@ -330,7 +404,7 @@ function submitQCM() {
 
 // Fonction qui appelle votre proxy Render sécurisé sur la route /correction
 async function callCorrectionAPI(prompt) {
-    console.log("Appel à l'API de correction. Prompt envoyé (début):", prompt.substring(0, 200) + "...");
+    console.log("Appel à l'API de correction. Prompt envoyé (début):", prompt.substring(0, Math.min(prompt.length, 200)) + (prompt.length > 200 ? "..." : ""));
     try {
         const response = await fetch(CORRECTION_API_URL, {
             method: 'POST',
@@ -382,14 +456,14 @@ async function submitParagrapheIA() {
     }
     
     resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
-    console.log("Paragraphe utilisateur soumis (début):", userAnswer.substring(0, 100) + "...");
+    console.log("Paragraphe utilisateur soumis (début):", userAnswer.substring(0, Math.min(userAnswer.length, 100)) + (userAnswer.length > 100 ? "..." : ""));
     
     // Le prompt contient la consigne pour l'IA et la réponse de l'élève
     const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
     
     try {
         const responseText = await callCorrectionAPI(prompt); 
-        console.log("Correction de l'IA reçue (début):", responseText.substring(0, 200) + "...");
+        console.log("Correction de l'IA reçue (début):", responseText.substring(0, Math.min(responseText.length, 200)) + (responseText.length > 200 ? "..." : ""));
         
         // On remplace les sauts de ligne (\n) par des balises <br> pour un meilleur affichage HTML
         const formattedText = responseText.replace(/\n/g, '<br>');
@@ -407,85 +481,121 @@ async function submitParagrapheIA() {
     }
 }
 
-// NOUVELLE FONCTION : Appelle l'API de génération d'IA
+// Fonction pour générer du contenu aléatoire (via les boutons dédiés)
 async function generateContentFromAI(contentType) {
-    console.log("Début de la génération de contenu par l'IA. Type demandé:", contentType);
+    console.log("Début de la génération de contenu par l'IA (aléatoire). Type demandé:", contentType);
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
     if (!generationFeedbackDiv) {
         console.error("Élément 'ai-generation-feedback' non trouvé.");
         return;
     }
-    generationFeedbackDiv.innerHTML = '<p>🧠 Demande à l\'IA de générer un ' + contentType.replace('_ia', '') + '...</p>';
     
-    // Préparer le prompt pour l'IA.
-    let promptText;
-    if (contentType === 'qcm') {
-        promptText = "Vous êtes un générateur de quiz pour des élèves de 3ème. Générez un QCM de niveau collège (3ème) sur un sujet aléatoire, avec 4 options de réponse et une explication pour la bonne réponse. Le QCM doit être au format JSON prêt à être utilisé par mon application. Répondez UNIQUEMENT avec l'objet JSON. Exemple de format : { \"type\": \"qcm\", \"question\": \"Quelle est la capitale de la France ?\", \"options\": [\"Berlin\",\"Madrid\",\"Paris\",\"Rome\"], \"reponse_correcte\": \"Paris\", \"explication\": \"Paris est la capitale et la plus grande ville de France.\" }";
-    } else if (contentType === 'paragraphe_ia') {
-        promptText = "Vous êtes un concepteur de sujets d'examen pour des élèves de 3ème. Générez un sujet de paragraphe argumenté de niveau collège (3ème) sur un thème aléatoire. Incluez 3 à 4 attendus pour ce paragraphe et une consigne spécifique pour la correction par l'IA. Répondez UNIQUEMENT avec l'objet JSON. Exemple de format : { \"type\": \"paragraphe_ia\", \"sujet\": \"La Révolution Française a-t-elle été un tournant majeur dans l'Histoire ?\", \"attendus\": [\"Introduction du contexte\",\"Arguments pour le 'tournant majeur'\",\"Arguments nuancés ou critiques\",\"Conclusion\"], \"consigne_ia\": \"Corrigez ce paragraphe argumenté d'un élève de 3ème. Donnez une note sur 10 et des commentaires constructifs sur l'argumentation, la structure et la maîtrise du sujet.\" }";
-    } else {
-        generationFeedbackDiv.innerHTML = '<p class="error">Type de contenu inconnu pour la génération IA.</p>';
-        console.warn("Type de contenu IA inconnu:", contentType);
+    // Afficher la vue du quiz et les messages de génération en attendant
+    document.getElementById('selection-view').style.display = 'none';
+    document.getElementById('quiz-view').style.display = 'block';
+    generationFeedbackDiv.style.display = 'block';
+    generationFeedbackDiv.innerHTML = '<p>🧠 Sélection d\'une leçon aléatoire et génération par l\'IA...</p>';
+    
+    // 1. Collecter toutes les leçons disponibles qui correspondent au type de contenu
+    const allLessons = [];
+    for (const matiere in STRUCTURE) {
+        for (const chapitre in STRUCTURE[matiere]) {
+            STRUCTURE[matiere][chapitre].forEach(itemConfig => {
+                if (itemConfig.type === contentType) {
+                    const fullPath = `${MATIERES_BASE_PATH}/${matiere}/${chapitre}/${itemConfig.file}`;
+                    allLessons.push({ path: fullPath, typeToGenerate: itemConfig.type, displayName: itemConfig.name });
+                }
+            });
+        }
+    }
+
+    if (allLessons.length === 0) {
+        generationFeedbackDiv.innerHTML = `<p class="error">❌ Aucune leçon de type "${contentType.replace('_ia', '')}" trouvée pour la génération aléatoire.</p>`;
+        console.warn("Aucune leçon trouvée pour la génération aléatoire de type:", contentType);
+        // Revenir à la vue de sélection
+        document.getElementById('quiz-view').style.display = 'none';
+        document.getElementById('selection-view').style.display = 'block';
         return;
     }
-    console.log("Prompt préparé pour l'API de génération (début):", promptText.substring(0, 200) + "...");
+
+    // 2. Choisir une leçon aléatoirement
+    const randomLesson = allLessons[Math.floor(Math.random() * allLessons.length)];
+    console.log("Leçon aléatoire sélectionnée:", randomLesson);
+    generationFeedbackDiv.innerHTML = `<p>🧠 Génération de ${randomLesson.typeToGenerate.replace('_ia', '').toUpperCase()} à partir de la leçon aléatoire "${randomLesson.displayName}"...</p>`;
 
     try {
-        const response = await fetch(GENERATION_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                prompt: promptText // On envoie le prompt que votre serveur Render attend
-            }),
-        });
-        console.log("Réponse de l'API de génération reçue. Statut:", response.status);
-
+        // 3. Charger le contenu de la leçon aléatoire
+        console.log("Chargement du contenu de la leçon aléatoire depuis:", randomLesson.path);
+        const response = await fetch(randomLesson.path);
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
-            console.error("Erreur brute de l'API de génération:", errorData);
-            throw new Error(`Erreur API Render (${response.status}): ${errorData.error || response.statusText}`);
+            throw new Error(`HTTP error! status: ${response.status} for ${randomLesson.path}`);
+        }
+        const lessonContent = await response.text(); // Lit le contenu comme du texte brut
+        console.log("Contenu de la leçon aléatoire chargé (début):", lessonContent.substring(0, Math.min(lessonContent.length, 100)) + (lessonContent.length > 100 ? "..." : ""));
+
+        // 4. Préparer le prompt pour l'IA, incluant le contenu de la leçon aléatoire
+        let promptTextForGeneration;
+        if (contentType === 'qcm') {
+            promptTextForGeneration = `Vous êtes un générateur de quiz pour des élèves de 3ème. Créez UN QCM de niveau collège (3ème) avec 4 options de réponse et une explication pour la bonne réponse, en vous basant STRICTEMENT et UNIQUEMENT sur le texte de la leçon ci-dessous. Le QCM doit être au format JSON prêt à être utilisé par mon application. Répondez UNIQUEMENT avec l'objet JSON.
+            Leçon:\n${lessonContent}\n
+            Exemple de format : { "type": "qcm", "question": "...", "options": ["...","...","...","..."], "reponse_correcte": "...", "explication": "..." }`;
+        } else if (contentType === 'paragraphe_ia') {
+            promptTextForGeneration = `Vous êtes un concepteur de sujets d'examen pour des élèves de 3ème. Générez UN sujet de paragraphe argumenté de niveau collège (3ème) en vous basant STRICTEMENT et UNIQUEMENT sur le texte de la leçon ci-dessous. Incluez 3 à 4 attendus pour ce paragraphe et une consigne spécifique pour la correction par l'IA. Répondez UNIQUEMENT avec l'objet JSON.
+            Leçon:\n${lessonContent}\n
+            Exemple de format : { "type": "paragraphe_ia", "sujet": "...", "attendus": ["...", "...", "..."], "consigne_ia": "Corrigez ce paragraphe argumenté d'un élève de 3ème. Donnez une note sur 10 et des commentaires constructifs sur l'argumentation, la structure et la maîtrise du sujet." }`;
+        } else {
+            // Cette branche ne devrait pas être atteinte car contentType est déjà filtré
+            generationFeedbackDiv.innerHTML = '<p class="error">Type de contenu inconnu pour la génération IA.</p>';
+            console.warn("Type de contenu IA inconnu:", contentType);
+            return;
         }
 
-        const data = await response.json();
-        console.log("Données de l'API de génération parsées:", data);
+        console.log("Prompt préparé pour l'API de génération (aléatoire, début):", promptTextForGeneration.substring(0, Math.min(promptTextForGeneration.length, 200)) + (promptTextForGeneration.length > 200 ? "..." : ""));
+
+        const aiGeneratedResponse = await fetch(GENERATION_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: promptTextForGeneration }),
+        });
+        console.log("Réponse de l'API de génération reçue (aléatoire). Statut:", aiGeneratedResponse.status);
+
+        if (!aiGeneratedResponse.ok) {
+            const errorData = await aiGeneratedResponse.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
+            throw new Error(`Erreur API Render (${aiGeneratedResponse.status}): ${errorData.error || aiGeneratedResponse.statusText}`);
+        }
+
+        const aiData = await aiGeneratedResponse.json();
+        console.log("Données de l'API de génération parsées (aléatoire):", aiData);
         
-        // Assurez-vous que l'IA renvoie un JSON analysable et utilisable
-        if (data.generated_content) {
-            console.log("Chaîne JSON générée par l'IA:", data.generated_content);
-            const generatedQuestion = JSON.parse(data.generated_content); // L'IA doit renvoyer une chaîne JSON
+        if (aiData.generated_content) {
+            console.log("Chaîne JSON générée par l'IA (aléatoire):", aiData.generated_content);
+            const generatedQuestion = JSON.parse(aiData.generated_content);
             
-            // On s'assure que le contenu généré correspond au type demandé
             if (generatedQuestion.type === contentType) {
-                console.log("Contenu généré par l'IA parsé et validé:", generatedQuestion);
+                console.log("Contenu généré par l'IA parsé et validé (aléatoire):", generatedQuestion);
                 currentQuizData = [generatedQuestion]; // Remplace les questions actuelles par celle générée
-                selectedItems = []; // Réinitialise les éléments sélectionnés si tu ne veux pas les mélanger
+                selectedItems = []; // Réinitialise les éléments sélectionnés
                 currentQuestionIndex = 0;
                 
-                const selectionView = document.getElementById('selection-view');
-                const quizView = document.getElementById('quiz-view');
-                if (selectionView && quizView) {
-                    selectionView.style.display = 'none';
-                    quizView.style.display = 'block';
-                    generationFeedbackDiv.innerHTML = ''; // Nettoie le feedback
-                    console.log("Vue basculée sur le quiz avec la question générée.");
-                } else {
-                    console.error("Éléments 'selection-view' ou 'quiz-view' non trouvés.");
-                }
+                generationFeedbackDiv.innerHTML = ''; // Nettoie le feedback
+                generationFeedbackDiv.style.display = 'none'; // Cacher le feedback une fois la génération terminée
+                console.log("Vue basculée sur le quiz avec la question aléatoire générée.");
                 displayCurrentQuestion(); // Affiche la question générée
             } else {
                  generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA a généré un type de contenu inattendu.</p>';
                  console.error("Le type de contenu généré par l'IA ne correspond pas au type demandé. Attendu:", contentType, "Reçu:", generatedQuestion.type);
             }
         } else {
-            console.error("Réponse de l'API de génération incomplète ou mal formée: 'generated_content' manquant.", data);
+            console.error("Réponse de l'API de génération incomplète ou mal formée (aléatoire): 'generated_content' manquant.", aiData);
             generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA n\'a pas pu générer le contenu. Réponse inattendue du serveur.</p>';
         }
 
     } catch (error) {
-        console.error("Erreur lors de la génération par l'IA:", error);
+        console.error("Erreur lors de la génération par l'IA (aléatoire):", error);
         generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA ou format de réponse invalide. Détails: ${error.message}</p>`;
+        // En cas d'erreur grave, on pourrait vouloir revenir à la sélection
+        document.getElementById('quiz-view').style.display = 'none';
+        document.getElementById('selection-view').style.display = 'block';
     }
 }
 
