@@ -1,1 +1,5 @@
-
+{
+    "GEMINI_API_KEY": "VOTRE_CLE_API_GEMINI",
+    "GEMINI_MODEL": "gemini-2.5-flash",
+    "GEMINI_API_URL": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="
+}
