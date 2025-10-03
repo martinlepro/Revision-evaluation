@@ -1,1 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Révisions 3ème - IA Helper</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
+    <h1>Mon Assistant de Révision 3ème</h1>
+
+    <div id="selection-view" class="container">
+        <div class="header-selection">
+            <h2>Sélectionnez vos sujets :</h2>
+            <div id="selected-box">
+                <p>Sélection : <span id="selected-items"></span></p>
+            </div>
+        </div>
+
+        <div id="menu-container">
+            <p>Chargement des matières...</p>
+        </div>
+        
+        <button id="start-quiz-btn" class="start-btn">Commencer le quiz</button>
+    </div>
+
+    <div id="quiz-view" class="container" style="display: none;">
+        <div id="question-container">
+            </div>
+
+        <div id="correction-feedback" class="feedback-box">
+        </div>
+
+        <button id="next-question-btn" class="next-btn" style="display: none;" onclick="nextQuestion()">Question suivante >></button>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
