@@ -4,17 +4,19 @@ let selectedItems = []; // Tableau pour stocker les chemins des fichiers JSON s�
 let currentQuizData = []; // Données des questions pour le quiz actuel
 let currentQuestionIndex = 0;
 
-// URL de votre serveur proxy sécurisé sur Render (OpenAI/ChatGPT)
-const CORRECTION_API_URL = 'https://cle-api.onrender.com'; 
+// URL de votre serveur proxy sécurisé sur Render (avec les NOUVELLES routes)
+const BASE_API_URL = 'https://cle-api.onrender.com'; 
+const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
+const GENERATION_API_URL = `${BASE_API_URL}/generation`; // Nouvelle route non utilisée par défaut ici, mais prête.
+
 
 // --- Gestion de la structure des matières (Simulée) ---
 
-// NOTE : Les navigateurs ne peuvent pas lire les fichiers d'un dossier directement.
-// La structure est codée "en dur" et inclut maintenant l'Allemand.
+// Structure codée en dur, incluant l'Allemand
 const STRUCTURE = {
     "Mathematiques": {
-        "Chapitre_Nombres_Premiers": ["QCM_1.json"],
-        "Chapitre_Les_Aires": ["QCM_Aires.json"]
+        "Nombres_Premiers": ["QCM_1.json"],
+        "Les_Aires": ["QCM_Aires.json"]
     },
     "Histoire_Geo": {
         "La_Revolution_Francaise": ["Paragraphe_Argumente_1.json"],
@@ -22,16 +24,14 @@ const STRUCTURE = {
     },
     // NOUVEAU : Ajout de la matière Allemand
     "Allemand": {
-        "Facile": ["QCM_Vocabulaire_Facile.json"],
-        "Grammaire": ["QCM_Grammaire_Base.json"]
+        "Vocabulaire_Facile": ["QCM_Vocabulaire_Facile.json"],
+        "Grammaire_Base": ["QCM_Grammaire_Base.json"]
     }
 };
 
 // --- Initialisation et chargement des ressources ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Le chargement de config.json n'est plus utile pour l'API KEY, mais peut garder 
-    // d'autres configurations si nécessaire. Nous le gardons pour l'instant.
     fetch('config.json')
         .then(response => response.json())
         .then(data => {
@@ -41,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => {
             console.error("Erreur de chargement de config.json.", error);
-            // On permet à l'application de continuer même sans config
             loadStructure();
         });
 
@@ -63,7 +62,7 @@ function loadStructure() {
 
         for (const chapitre in STRUCTURE[matiere]) {
             const chapitreLi = document.createElement('li');
-            chapitreLi.innerHTML = `<h3>${chapitre}</h3>`;
+            chapitreLi.innerHTML = `<h3>${chapitre.replace(/_/g, ' ')}</h3>`; // Affiche le nom sans underscore
 
             const itemsList = document.createElement('ul');
             STRUCTURE[matiere][chapitre].forEach(item => {
@@ -104,7 +103,6 @@ function updateSelection(event) {
         selectedItems = selectedItems.filter(item => item !== path);
     }
     
-    // Mettre à jour l'affichage de la sélection
     const selectionDisplay = document.getElementById('selected-items');
     selectionDisplay.textContent = selectedItems.map(p => p.split('/').slice(-3).join(' > ')).join(' | ');
 }
@@ -117,23 +115,19 @@ async function startQuiz() {
         return;
     }
     
-    // Cacher le menu et afficher le quiz
     document.getElementById('selection-view').style.display = 'none';
     document.getElementById('quiz-view').style.display = 'block';
 
     currentQuizData = [];
     
-    // Charger tous les fichiers JSON sélectionnés
     for (const itemPath of selectedItems) {
         try {
             const response = await fetch(itemPath);
             let data = await response.json();
             
-            // Si le fichier est un tableau (QCM multiple), l'ajouter question par question
             if (Array.isArray(data)) {
                 currentQuizData.push(...data);
             } else {
-                 // Si c'est un objet simple (paragraphe IA), l'ajouter tel quel
                 currentQuizData.push(data);
             }
         } catch (error) {
@@ -141,7 +135,6 @@ async function startQuiz() {
         }
     }
     
-    // Mélanger les questions (optionnel)
     currentQuizData.sort(() => Math.random() - 0.5);
 
     currentQuestionIndex = 0;
@@ -153,19 +146,18 @@ function displayCurrentQuestion() {
     const questionData = currentQuizData[currentQuestionIndex];
 
     if (!questionData) {
-        // Fin du quiz
         questionContainer.innerHTML = `<h2>Bravo, vous avez terminé la révision !</h2>
             <button onclick="window.location.reload()">Recommencer</button>`;
         return;
     }
     
-    // Affichage du numéro de la question
     let html = `<h3>Question ${currentQuestionIndex + 1} / ${currentQuizData.length}</h3>`;
     
     if (questionData.type === 'qcm') {
         html += `<div class="qcm-question"><h4>${questionData.question}</h4>`;
         
-        questionData.options.forEach((option, index) => {
+        questionData.options.forEach((option) => {
+            // Utiliser un ID unique basé sur l'option pour l'accessibilité si nécessaire, mais le name suffit pour le groupe
             html += `<label>
                         <input type="radio" name="qcm-answer" value="${option}">
                         ${option}
@@ -182,6 +174,8 @@ function displayCurrentQuestion() {
     }
 
     questionContainer.innerHTML = html;
+    document.getElementById('correction-feedback').innerHTML = '';
+    document.getElementById('next-question-btn').style.display = 'none';
 }
 
 // --- Fonctions de Soumission et Correction ---
@@ -208,13 +202,10 @@ function submitQCM() {
         resultDiv.innerHTML = feedback;
     }
 
-    // Afficher le bouton pour passer à la suite
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
-const CORRECTION_API_URL = 'https://cle-api.onrender.com/correction';
-
-// Nouvelle fonction qui appelle votre proxy Render sécurisé
+// Fonction qui appelle votre proxy Render sécurisé sur la route /correction
 async function callCorrectionAPI(prompt) {
     const response = await fetch(CORRECTION_API_URL, {
         method: 'POST',
@@ -227,7 +218,8 @@ async function callCorrectionAPI(prompt) {
     });
     
     if (!response.ok) {
-        const errorData = await response.json();
+        // Tenter de lire le message d'erreur du serveur
+        const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
         throw new Error(`Erreur API Render: ${errorData.error || response.statusText}`);
     }
     
@@ -237,7 +229,7 @@ async function callCorrectionAPI(prompt) {
         return data.correction_text;
     } else {
         console.error("Réponse de l'API incomplète:", data);
-        return "L'IA n'a pas pu générer de correction pour le moment.";
+        return "L'IA n'a pas pu générer de correction pour le moment. Réponse inattendue du serveur.";
     }
 }
 
@@ -258,10 +250,12 @@ async function submitParagrapheIA() {
     const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
     
     try {
-        // *** APPEL AU PROXY RENDER SÉCURISÉ ***
         const responseText = await callCorrectionAPI(prompt); 
         
-        resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div>`;
+        // On remplace les sauts de ligne (\n) par des balises <br> pour un meilleur affichage HTML
+        const formattedText = responseText.replace(/\n/g, '<br>');
+        
+        resultDiv.innerHTML = `<div class="ia-feedback">${formattedText}</div>`;
         document.getElementById('next-question-btn').style.display = 'block';
 
     } catch (error) {
@@ -273,7 +267,6 @@ async function submitParagrapheIA() {
 // --- Navigation ---
 
 function nextQuestion() {
-    // Nettoyer la zone de feedback
     document.getElementById('correction-feedback').innerHTML = '';
     document.getElementById('next-question-btn').style.display = 'none';
 
