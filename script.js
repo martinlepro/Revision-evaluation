@@ -1,3 +1,7 @@
+window.onerror = function(msg, url, line, col, error) {
+  document.getElementById('debug').textContent =
+    "Erreur JS : " + msg + "\nLigne: " + line + "\n" + (error ? error.stack : "");
+};
 const MATIERES_BASE_PATH = 'matieres';
 let config = {};
 let selectedItems = []; // Tableau pour stocker les chemins des fichiers JSON sélectionnés
@@ -45,6 +49,90 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
     document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+    // ... (ton code existant) ...
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('config.json')
+        .then(response => response.json())
+        .then(data => {
+            config = data;
+            console.log('Configuration chargée.');
+            loadStructure();
+        })
+        .catch(error => {
+            console.error("Erreur de chargement de config.json.", error);
+            loadStructure();
+        });
+
+    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+    
+    // NOUVEAU : Ajout des écouteurs pour les boutons de génération IA
+    document.getElementById('generate-qcm-btn').addEventListener('click', () => generateContentFromAI('qcm'));
+    document.getElementById('generate-paragraphe-btn').addEventListener('click', () => generateContentFromAI('paragraphe_ia'));
+});
+// NOUVELLE FONCTION : Appelle l'API de génération d'IA
+async function generateContentFromAI(contentType) {
+    const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
+    generationFeedbackDiv.innerHTML = '<p>🧠 Demande à l\'IA de générer un ' + contentType.replace('_ia', '') + '...</p>';
+    
+    // Préparer le prompt pour l'IA. C'est ici que tu demandes un sujet "aléatoire".
+    let promptText;
+    if (contentType === 'qcm') {
+        promptText = "Génère un QCM de niveau collège (3ème) sur un sujet aléatoire, avec 4 options de réponse et une explication pour la bonne réponse. Le QCM doit être au format JSON prêt à être utilisé par mon application. Exemple de format : { \"type\": \"qcm\", \"question\": \"...\", \"options\": [\"A\",\"B\",\"C\",\"D\"], \"reponse_correcte\": \"...\", \"explication\": \"...\" }";
+    } else if (contentType === 'paragraphe_ia') {
+        promptText = "Génère un sujet de paragraphe argumenté de niveau collège (3ème) sur un thème aléatoire. Inclue 3 à 4 attendus pour ce paragraphe et une consigne spécifique pour la correction par l'IA. Le tout doit être au format JSON. Exemple de format : { \"type\": \"paragraphe_ia\", \"sujet\": \"...\", \"attendus\": [\"...\",\"...\"], \"consigne_ia\": \"...\" }";
+    } else {
+        generationFeedbackDiv.innerHTML = '<p class="error">Type de contenu inconnu pour la génération IA.</p>';
+        return;
+    }
+
+    try {
+        const response = await fetch(GENERATION_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: promptText 
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
+            throw new Error(`Erreur API Render: ${errorData.error || response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Assurez-vous que l'IA renvoie un JSON analysable et utilisable
+        if (data.generated_content) {
+            const generatedQuestion = JSON.parse(data.generated_content); // L'IA doit renvoyer une chaîne JSON
+            
+            // On s'assure que le contenu généré correspond au type demandé
+            if (generatedQuestion.type === contentType) {
+                currentQuizData = [generatedQuestion]; // Remplace les questions actuelles par celle générée
+                selectedItems = []; // Réinitialise les éléments sélectionnés si tu ne veux pas les mélanger
+                currentQuestionIndex = 0;
+                
+                document.getElementById('selection-view').style.display = 'none';
+                document.getElementById('quiz-view').style.display = 'block';
+                generationFeedbackDiv.innerHTML = ''; // Nettoie le feedback
+                displayCurrentQuestion(); // Affiche la question générée
+            } else {
+                 generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA a généré un type de contenu inattendu.</p>';
+            }
+        } else {
+            console.error("Réponse de l'API incomplète ou mal formée:", data);
+            generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA n\'a pas pu générer le contenu. Réponse inattendue du serveur.</p>';
+        }
+
+    } catch (error) {
+        console.error("Erreur lors de la génération par l'IA:", error);
+        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA ou format de réponse invalide. Détails: ${error.message}</p>`;
+    }
+}
+
+
 });
 
 // --- Gestion de la structure des matières (Affichage) ---
