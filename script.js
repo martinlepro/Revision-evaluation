@@ -212,6 +212,8 @@ function submitQCM() {
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
+const CORRECTION_API_URL = 'https://cle-api.onrender.com/correction';
+
 // Nouvelle fonction qui appelle votre proxy Render sécurisé
 async function callCorrectionAPI(prompt) {
     const response = await fetch(CORRECTION_API_URL, {
