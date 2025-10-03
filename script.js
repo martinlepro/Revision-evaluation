@@ -4,31 +4,13 @@ let selectedItems = []; // Tableau pour stocker les chemins des fichiers JSON s�
 let currentQuizData = []; // Données des questions pour le quiz actuel
 let currentQuestionIndex = 0;
 
-// --- Initialisation et chargement des ressources ---
-
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Chargement de la configuration (Clé API)
-    fetch('config.json')
-        .then(response => response.json())
-        .then(data => {
-            config = data;
-            console.log('Configuration chargée.');
-            // 2. Lancement de l'affichage de la structure des matières
-            loadStructure();
-        })
-        .catch(error => {
-            console.error("Erreur de chargement de config.json. L'IA ne fonctionnera pas.", error);
-            alert("Erreur de chargement de la configuration de l'IA.");
-        });
-
-    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
-});
+// URL de votre serveur proxy sécurisé sur Render (OpenAI/ChatGPT)
+const CORRECTION_API_URL = 'https://cle-api.onrender.com'; 
 
 // --- Gestion de la structure des matières (Simulée) ---
 
 // NOTE : Les navigateurs ne peuvent pas lire les fichiers d'un dossier directement.
-// Nous allons SIMPLIFIER la structure pour l'exemple en la codant "en dur".
-// Dans un vrai projet, vous passeriez par une étape de "build" pour générer ce JSON.
+// La structure est codée "en dur" et inclut maintenant l'Allemand.
 const STRUCTURE = {
     "Mathematiques": {
         "Chapitre_Nombres_Premiers": ["QCM_1.json"],
@@ -37,8 +19,36 @@ const STRUCTURE = {
     "Histoire_Geo": {
         "La_Revolution_Francaise": ["Paragraphe_Argumente_1.json"],
         "Les_Fleuves_du_Monde": ["QCM_Geographie.json"]
+    },
+    // NOUVEAU : Ajout de la matière Allemand
+    "Allemand": {
+        "Facile": ["QCM_Vocabulaire_Facile.json"],
+        "Grammaire": ["QCM_Grammaire_Base.json"]
     }
 };
+
+// --- Initialisation et chargement des ressources ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Le chargement de config.json n'est plus utile pour l'API KEY, mais peut garder 
+    // d'autres configurations si nécessaire. Nous le gardons pour l'instant.
+    fetch('config.json')
+        .then(response => response.json())
+        .then(data => {
+            config = data;
+            console.log('Configuration chargée.');
+            loadStructure();
+        })
+        .catch(error => {
+            console.error("Erreur de chargement de config.json.", error);
+            // On permet à l'application de continuer même sans config
+            loadStructure();
+        });
+
+    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+});
+
+// --- Gestion de la structure des matières (Affichage) ---
 
 function loadStructure() {
     const menuContainer = document.getElementById('menu-container');
@@ -202,6 +212,34 @@ function submitQCM() {
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
+// Nouvelle fonction qui appelle votre proxy Render sécurisé
+async function callCorrectionAPI(prompt) {
+    const response = await fetch(CORRECTION_API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            prompt: prompt // On envoie le prompt que votre serveur Render attend
+        }),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Erreur API Render: ${errorData.error || response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.correction_text) {
+        return data.correction_text;
+    } else {
+        console.error("Réponse de l'API incomplète:", data);
+        return "L'IA n'a pas pu générer de correction pour le moment.";
+    }
+}
+
+
 async function submitParagrapheIA() {
     const questionData = currentQuizData[currentQuestionIndex];
     const userAnswer = document.getElementById('ia-answer').value.trim();
@@ -214,46 +252,19 @@ async function submitParagrapheIA() {
     
     resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
     
+    // Le prompt contient la consigne pour l'IA et la réponse de l'élève
     const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
     
     try {
-        const response = await callGeminiAPI(prompt);
+        // *** APPEL AU PROXY RENDER SÉCURISÉ ***
+        const responseText = await callCorrectionAPI(prompt); 
         
-        resultDiv.innerHTML = `<div class="ia-feedback">${response}</div>`;
+        resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div>`;
         document.getElementById('next-question-btn').style.display = 'block';
 
     } catch (error) {
-        console.error("Erreur de l'API Gemini:", error);
-        resultDiv.innerHTML = '<p class="error">❌ Erreur de connexion à l\'IA. Vérifiez votre clé API ou l\'état du service.</p>';
-    }
-}
-
-// --- Fonction d'appel à l'API Gemini ---
-
-async function callGeminiAPI(prompt) {
-    const response = await fetch(config.GEMINI_API_URL + config.GEMINI_API_KEY, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-        }),
-    });
-    
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Vérification basique pour s'assurer que la réponse contient du texte
-    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-        return data.candidates[0].content.parts[0].text;
-    } else {
-        // Gérer les cas où l'API renvoie une erreur ou une réponse vide
-        console.error("Réponse de l'API incomplète:", data);
-        return "L'IA n'a pas pu générer de correction pour le moment.";
+        console.error("Erreur lors de la correction:", error);
+        resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA. Vérifiez votre service Render. Détails: ${error.message}</p>`;
     }
 }
 
@@ -266,4 +277,4 @@ function nextQuestion() {
 
     currentQuestionIndex++;
     displayCurrentQuestion();
-      }
+}
