@@ -1,4 +1,4 @@
-// script.js (Version avec formatage Markdown et préparation pour l'audio)
+// script.js (Version avec formatage Markdown, audio OpenAI TTS, et structure dictée/compréhension)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
@@ -9,7 +9,7 @@ const originalConsoleError = console.error;
 function appendToDebug(message, type = 'log') {
     if (debugElement) {
         const p = document.createElement('p');
-        p.style.whiteSpace = 'pre-wrap'; // Pour conserver les retours à la ligne dans le JSON
+        p.style.whiteSpace = 'pre-wrap'; 
         p.textContent = `[${type.toUpperCase()}] ${new Date().toLocaleTimeString()} : ${message}`;
         if (type === 'error') {
             p.style.color = 'red';
@@ -65,6 +65,12 @@ let isQuizRunning = false;
 const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
+const AUDIO_GENERATION_API_URL = `${BASE_API_URL}/generate-audio`; // Nouvelle URL pour l'audio
+
+// Pour la relecture audio
+let currentAudioPlayer = null;
+let listenCount = 0;
+let maxListens = 3; // Par défaut, 3 écoutes max, peut être ajusté par l'IA ou la difficulté
 
 // --- NOUVELLE STRUCTURE DES MATIÈRES ---
 const STRUCTURE = {
@@ -140,7 +146,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (startParagrapheBtn) {
         startParagrapheBtn.addEventListener('click', () => startQuiz('paragraphe_ia'));
     } else {
-        console.warn("Bouton 'start-paragraphe-btn' non trouvé. Assurez-u'il existe dans votre HTML.");
+        console.warn("Bouton 'start-paragraphe-btn' non trouvé. Assurez-vous qu'il existe dans votre HTML.");
+    }
+
+    // NOUVEAU : Bouton pour la dictée
+    const startDictationBtn = document.getElementById('start-dictation-btn');
+    if (startDictationBtn) {
+        startDictationBtn.addEventListener('click', () => startQuiz('audio_dictation'));
+    } else {
+        console.warn("Bouton 'start-dictation-btn' non trouvé. Assurez-vous qu'il existe dans votre HTML.");
     }
 });
 
@@ -194,6 +208,8 @@ function updateSelectedItems() {
         if (startQCMBtn) startQCMBtn.style.display = 'none';
         const startParagrapheBtn = document.getElementById('start-paragraphe-btn');
         if (startParagrapheBtn) startParagrapheBtn.style.display = 'none';
+        const startDictationBtn = document.getElementById('start-dictation-btn');
+        if (startDictationBtn) startDictationBtn.style.display = 'none';
     } else {
         selectedBox.innerHTML = selectedItems.map(item => item.name).join(', ');
         document.getElementById('start-quiz-btn').style.display = 'block';
@@ -201,6 +217,8 @@ function updateSelectedItems() {
         if (startQCMBtn) startQCMBtn.style.display = 'block';
         const startParagrapheBtn = document.getElementById('start-paragraphe-btn');
         if (startParagrapheBtn) startParagrapheBtn.style.display = 'block';
+        const startDictationBtn = document.getElementById('start-dictation-btn');
+        if (startDictationBtn) startDictationBtn.style.display = 'block';
     }
 }
 
@@ -305,9 +323,60 @@ async function fetchFileContent(path) {
 // --- Nouvelle fonction pour formater le Markdown (gras) ---
 function formatMarkdownBold(text) {
     if (!text) return '';
-    // Remplace **texte** par <strong>texte</strong>
     return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 }
+
+// --- Nouvelle fonction pour générer et jouer l'audio ---
+async function generateAndPlayAudioFromBackend(textToSpeak, audioPlayerElement, playButtonElement, listenCountElement) {
+    playButtonElement.disabled = true;
+    listenCount = 0; // Réinitialise le compteur pour chaque nouvelle question audio
+    currentAudioPlayer = null; // Réinitialise le lecteur
+
+    if (textToSpeak.length > 4096) { // Limite d'OpenAI TTS pour l'input text
+        alert("Le texte est trop long pour être converti en audio. Max 4096 caractères.");
+        playButtonElement.disabled = false;
+        return;
+    }
+
+    try {
+        // Indiquer à l'utilisateur que la génération audio est en cours
+        listenCountElement.innerHTML = "Génération audio... 🎧";
+        
+        const response = await fetch(AUDIO_GENERATION_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: textToSpeak, language: 'fr' }) // On peut ajouter voice et model ici
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: "Erreur serveur TTS inconnue." }));
+            throw new Error(`Erreur génération audio: Statut ${response.status}. Détails: ${errorData.message || response.statusText}`);
+        }
+
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        currentAudioPlayer = new Audio(audioUrl);
+        currentAudioPlayer.onended = () => {
+            playButtonElement.disabled = false;
+            listenCountElement.textContent = `Écoutes restantes: ${maxListens - listenCount}`;
+            if (listenCount >= maxListens) {
+                playButtonElement.disabled = true; // Désactive après la dernière écoute
+            }
+        };
+        
+        currentAudioPlayer.play();
+        listenCount++;
+        listenCountElement.textContent = `Écoutes restantes: ${maxListens - listenCount}`;
+        playButtonElement.disabled = (listenCount >= maxListens); // Désactive si max atteint
+
+    } catch (error) {
+        console.error("Erreur lors de la génération ou lecture audio:", error);
+        listenCountElement.innerHTML = `Erreur audio: ${error.message}`;
+        playButtonElement.disabled = false; // Réactive en cas d'erreur pour réessayer
+    }
+}
+
 
 async function callGenerationAPI(topicContent, type, count) {
     let instruction = "";
@@ -326,11 +395,16 @@ async function callGenerationAPI(topicContent, type, count) {
     } else if (type === 'paragraphe_ia') {
         instruction = `${strictnessInstruction} Génère ${count} sujets de rédaction de paragraphe. 
         Pour chaque sujet, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
-    } else {
+    } else if (type === 'audio_dictation') {
+        // NOUVEAU : Demande à l'IA de générer un texte pour la dictée
+        instruction = `${strictnessInstruction} Génère ${count} textes courts et clairs pour une dictée, basés sur le contenu de leçon fourni. Chaque texte doit être une phrase ou deux, adapté à un élève de 3ème. Chaque objet doit avoir une clé 'text' pour le texte de la dictée et une clé 'points' pour la difficulté (entre 1 et 3). **Ne pose pas de questions, fournis juste le texte.**`;
+    } 
+    // Tu pourrais ajouter 'audio_comprehension' ici avec une instruction similaire pour un texte plus long + des questions.
+    else {
         throw new Error("Type de génération de questions inconnu.");
     }
 
-    const full_prompt = `${instruction} Le résultat doit être un tableau JSON nommé "questions", où chaque objet représente une question, et inclut un champ "type" ("qcm" ou "paragraphe_ia"). Contenu de la leçon: """${topicContent}"""`;
+    const full_prompt = `${instruction} Le résultat doit être un tableau JSON nommé "questions", où chaque objet représente une question, et inclut un champ "type" ("qcm", "paragraphe_ia" ou "audio_dictation"). Contenu de la leçon: """${topicContent}"""`;
     console.log("Envoi du prompt à l'API de génération (début):", full_prompt.substring(0, 500) + "..."); 
 
     const response = await fetch(GENERATION_API_URL, {
@@ -379,12 +453,14 @@ function displayCurrentQuestion() {
     document.getElementById('correction-feedback').innerHTML = '';
     document.getElementById('next-question-btn').style.display = 'none';
 
-
     if (questionData.type === 'qcm') {
         renderQCM(questionData, container);
     } else if (questionData.type === 'paragraphe_ia') {
         renderParagraphe(questionData, container);
-    } else {
+    } else if (questionData.type === 'audio_dictation') { // NOUVEAU
+        renderAudioDictation(questionData, container);
+    } 
+    else {
         container.innerHTML += `<p class="error">Type de question inconnu.</p>`;
         appendToDebug(`Type de question inconnu: ${questionData.type}`, 'error');
         document.getElementById('next-question-btn').style.display = 'block';
@@ -435,6 +511,49 @@ function renderParagraphe(questionData, container) {
     container.innerHTML += html;
 }
 
+// NOUVEAU : Render pour la dictée audio
+function renderAudioDictation(questionData, container) {
+    const dictationPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1;
+    totalQuizPoints += dictationPoints;
+    console.log("Rendu Dictée Audio. Texte:", questionData.text, `(vaut ${dictationPoints} points)`);
+
+    let html = `
+        <div class="audio-dictation-question">
+            <h4>Dictée (Notée sur ${dictationPoints} points) :</h4>
+            <p>Écoutez le texte et transcrivez-le.</p>
+            <button id="play-audio-btn" style="padding: 10px 20px; font-size: 1.2em;">▶️ Écouter</button>
+            <span id="listen-count-display" style="margin-left: 10px;">Écoutes restantes: ${maxListens}</span>
+            <textarea id="dictation-answer" rows="5" placeholder="Écrivez le texte que vous entendez ici..."></textarea>
+            <button onclick="submitDictation()">Valider la dictée</button>
+        </div>
+    `;
+    container.innerHTML += html;
+
+    // Récupérer les éléments après qu'ils ont été ajoutés au DOM
+    const playButton = document.getElementById('play-audio-btn');
+    const listenCountDisplay = document.getElementById('listen-count-display');
+
+    // Générer et jouer l'audio la première fois
+    generateAndPlayAudioFromBackend(
+        questionData.text, 
+        currentAudioPlayer, // Pas besoin d'un élément audio spécifique, la fonction le crée
+        playButton, 
+        listenCountDisplay
+    );
+
+    // Attacher l'écouteur d'événement pour les écoutes suivantes
+    playButton.addEventListener('click', () => {
+        if (currentAudioPlayer && listenCount < maxListens) {
+            currentAudioPlayer.play();
+            listenCount++;
+            listenCountDisplay.textContent = `Écoutes restantes: ${maxListens - listenCount}`;
+            if (listenCount >= maxListens) {
+                playButton.disabled = true;
+            }
+        }
+    });
+}
+
 // --- Soumission et Correction ---
 
 function submitQCM() {
@@ -451,7 +570,7 @@ function submitQCM() {
     }
 
     const userAnswer = selectedOption.value;
-    const correctAnswer = formatMarkdownBold(questionData.bonne_reponse); // Formate aussi la bonne réponse pour comparaison exacte
+    const correctAnswer = formatMarkdownBold(questionData.bonne_reponse); 
     const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1; 
 
     if (typeof correctAnswer === 'undefined' || correctAnswer === null) {
@@ -533,6 +652,49 @@ async function submitParagrapheIA() {
     }
 }
 
+// NOUVEAU : Soumission pour la dictée
+function submitDictation() {
+    console.log("submitDictation() déclenché.");
+    const questionData = currentQuizData[currentQuestionIndex];
+    const userAnswer = document.getElementById('dictation-answer').value.trim();
+    const resultDiv = document.getElementById('correction-feedback');
+    const dictationPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1;
+
+    // Arrêter l'audio si elle joue encore
+    if (currentAudioPlayer) {
+        currentAudioPlayer.pause();
+        currentAudioPlayer.currentTime = 0;
+    }
+    // Désactiver la zone de texte et le bouton de relecture
+    document.getElementById('dictation-answer').disabled = true;
+    document.getElementById('play-audio-btn').disabled = true;
+
+    const originalText = questionData.text;
+
+    // Simple correction: comparaison exacte (ignorer casse et ponctuation de base pour la tolérance)
+    const normalizedUserAnswer = userAnswer.toLowerCase().replace(/[.,!?;:]/g, '');
+    const normalizedOriginalText = originalText.toLowerCase().replace(/[.,!?;:]/g, '');
+
+    let score = 0;
+    let feedback = '';
+
+    if (normalizedUserAnswer === normalizedOriginalText) {
+        score = dictationPoints;
+        feedback = `<p class="correct">✅ **Excellent !** Votre transcription est parfaite. Vous gagnez ${score} points.</p>`;
+    } else {
+        // Une correction plus avancée pourrait impliquer l'IA ou un algorithme de distance de Levenshtein
+        feedback = `<p class="incorrect">❌ **Votre transcription contient des erreurs.**</p>`;
+        feedback += `<p>Texte attendu : "**${originalText}**"</p>`;
+        feedback += `<p>Votre réponse : "${userAnswer}"</p>`;
+        // Ici tu pourrais ajouter une logique pour des points partiels si tu le souhaites
+    }
+    
+    userScore += score;
+    resultDiv.innerHTML = feedback;
+    document.getElementById('next-question-btn').style.display = 'block';
+}
+
+
 // --- Navigation ---
 
 function nextQuestion() {
@@ -565,41 +727,3 @@ function showFinalScore() {
     document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer</button>';
     isQuizRunning = false;
 }
-
-// --- Instructions pour la fonctionnalité de Compréhension Orale / Dictée ---
-/*
-Pour implémenter la compréhension orale ou la dictée, voici les étapes et les outils Firebase que tu pourrais utiliser :
-
-1.  **Génération du texte (IA) :**
-    *   Ton `callGenerationAPI` actuel peut déjà être étendu. Tu demanderais à l'IA de générer un texte spécifique pour une dictée ou un exercice de compréhension orale, en précisant la longueur et la difficulté.
-
-2.  **Conversion Texte-vers-Voix (TTS) :**
-    *   C'est la partie la plus critique et elle nécessite un service externe. Des options comme **Google Cloud Text-to-Speech** (qui s'intègre bien avec Google Cloud et donc Firebase) ou l'API TTS d'OpenAI sont excellentes.
-    *   **Comment l'appeler :** Tu ne peux pas appeler une API TTS directement depuis ton frontend (pour des raisons de sécurité de ta clé API). Il faudrait créer une nouvelle route sur ton `server.js` (ou mieux, une **Cloud Function for Firebase**) qui :
-        *   Reçoit le texte généré par ton `script.js`.
-        *   Appelle l'API TTS avec ta clé API sécurisée.
-        *   Reçoit le fichier audio (ou un lien vers celui-ci).
-
-3.  **Stockage du fichier audio :**
-    *   Une fois l'audio généré par le service TTS, il devrait être stocké. **Cloud Storage for Firebase** est parfait pour cela.
-    *   Ton backend (Cloud Function ou `server.js`) pourrait uploader l'audio généré sur Cloud Storage, puis renvoyer l'URL publique de ce fichier audio à ton frontend.
-
-4.  **Interface Utilisateur (Frontend - `script.js` et `index.html`) :**
-    *   **Nouvelle section dans `index.html` :** Ajoute des boutons pour "Démarrer une Dictée" ou "Démarrer Compréhension Orale", un lecteur audio (`<audio>`), une zone de texte pour la réponse de l'élève (dictée), et/ou des champs pour les questions de compréhension.
-    *   **Logique dans `script.js` :**
-        *   Une nouvelle fonction `startAudioQuiz(type)` similaire à `startQuiz`.
-        *   Appellerait ton backend pour obtenir le texte et l'audio.
-        *   Gérerait la lecture de l'audio (`<audio>` HTML element).
-        *   Mettrait à jour un compteur du nombre d'écoutes permises.
-        *   Collecterait la réponse de l'utilisateur.
-        *   Enverrait la réponse au backend pour correction (voir étape 5).
-
-5.  **Correction (Backend - `server.js` ou Cloud Function) :**
-    *   **Pour la dictée :** Ton `server.js` pourrait recevoir le texte tapé par l'élève et le comparer au texte original que l'IA avait généré. Tu pourrais utiliser l'IA de correction pour évaluer la précision de la dictée et donner une note.
-    *   **Pour la compréhension orale :** L'IA (via une nouvelle route de correction sur ton `server.js`) recevrait les réponses de l'élève aux questions de compréhension et le texte original de l'audio, puis jugerait la pertinence des réponses.
-
-**En résumé, la "méga update" est une architecture complète :**
-`Frontend (script.js)` <--> `Backend (server.js ou Cloud Functions)` <--> `API OpenAI (texte)` & `API TTS (audio)` <--> `Cloud Storage (fichiers audio)`
-
-C'est un projet passionnant, mais il faudrait le découper en plusieurs étapes d'implémentation ! Pour l'instant, ton application est optimisée pour les questions écrites.
-*/
