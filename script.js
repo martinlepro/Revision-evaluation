@@ -1,4 +1,4 @@
-// script.js (Version finale avec toutes les fonctionnalités et corrections)
+// script.js (Version avec formatage Markdown et préparation pour l'audio)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
@@ -67,8 +67,6 @@ const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
 // --- NOUVELLE STRUCTURE DES MATIÈRES ---
-// Basée sur les chemins de fichiers que tu as fournis.
-// Tous les "chapitres" sont traités comme des sous-dossiers réels.
 const STRUCTURE = {
     "Anglais": {
         "Culture": [ 
@@ -130,8 +128,7 @@ const STRUCTURE = {
 
 document.addEventListener('DOMContentLoaded', () => {
     displayMenu();
-    // Boutons de démarrage des quiz
-    document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixed')); // Quiz Mixte
+    document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixed')); 
     const startQCMBtn = document.getElementById('start-qcm-btn');
     if (startQCMBtn) {
         startQCMBtn.addEventListener('click', () => startQuiz('qcm'));
@@ -143,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (startParagrapheBtn) {
         startParagrapheBtn.addEventListener('click', () => startQuiz('paragraphe_ia'));
     } else {
-        console.warn("Bouton 'start-paragraphe-btn' non trouvé. Assurez-vous qu'il existe dans votre HTML.");
+        console.warn("Bouton 'start-paragraphe-btn' non trouvé. Assurez-u'il existe dans votre HTML.");
     }
 });
 
@@ -162,7 +159,6 @@ function displayMenu() {
             chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; 
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
-                // --- CORRECTION CLÉ ICI : Toujours inclure chapitreName dans le chemin ---
                 const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
                 
                 const label = document.createElement('label');
@@ -306,20 +302,29 @@ async function fetchFileContent(path) {
     return response.text();
 }
 
+// --- Nouvelle fonction pour formater le Markdown (gras) ---
+function formatMarkdownBold(text) {
+    if (!text) return '';
+    // Remplace **texte** par <strong>texte</strong>
+    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
 async function callGenerationAPI(topicContent, type, count) {
     let instruction = "";
+    const strictnessInstruction = `**Réponds UNIQUEMENT en te basant sur le "Contenu de la leçon" fourni.** Ne fais pas d'inférences, ne tire pas de conclusions ou ne demande pas de comparaisons qui ne sont pas explicitement supportées par le texte que je te donne. Ne pas utiliser de connaissances externes.`;
+
     if (type === 'mixed') {
-        instruction = `Génère ${count} questions de quiz basées sur le contenu de leçon suivant. 
+        instruction = `${strictnessInstruction} Génère ${count} questions de quiz. 
         Pour les questions, utilise un langage clair et direct. Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML** (par exemple, écris "AM divisé par AB" ou "AM/AB" au lieu de "\\frac{AM}{AB}").
         Mélange des questions à choix multiples (QCM) et des sujets de rédaction de paragraphe.
         Pour chaque QCM, fournis la question (clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication'). **Attribue également un champ 'points' à chaque QCM avec une valeur numérique entre 1 et 3 (plus la question est difficile, plus de points).**
         Pour les sujets de paragraphe, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
     } else if (type === 'qcm') {
-        instruction = `Génère ${count} questions à choix multiples (QCM) basées sur le contenu de leçon suivant. 
+        instruction = `${strictnessInstruction} Génère ${count} questions à choix multiples (QCM). 
         Pour les questions, utilise un langage clair et direct. Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML**.
         Pour chaque QCM, fournis la question (clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication'). **Attribue également un champ 'points' à chaque QCM avec une valeur numérique entre 1 et 3 (plus la question est difficile, plus de points).**`;
     } else if (type === 'paragraphe_ia') {
-        instruction = `Génère ${count} sujets de rédaction de paragraphe basés sur le contenu de leçon suivant. 
+        instruction = `${strictnessInstruction} Génère ${count} sujets de rédaction de paragraphe. 
         Pour chaque sujet, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
     } else {
         throw new Error("Type de génération de questions inconnu.");
@@ -393,15 +398,15 @@ function renderQCM(questionData, container) {
 
     let html = `
         <div class="qcm-question">
-            <h4>${questionData.question} <span class="qcm-points">(${qcmPoints} points)</span></h4>
+            <h4>${formatMarkdownBold(questionData.question)} <span class="qcm-points">(${qcmPoints} points)</span></h4>
             <div id="options-container">
     `;
 
     questionData.options.forEach((option, index) => {
         html += `
             <label>
-                <input type="radio" name="qcm-option" value="${option}">
-                ${option}
+                <input type="radio" name="qcm-option" value="${formatMarkdownBold(option)}">
+                ${formatMarkdownBold(option)}
             </label>
         `;
     });
@@ -422,7 +427,7 @@ function renderParagraphe(questionData, container) {
     let html = `
         <div class="paragraphe-sujet">
             <h4>Sujet de Rédaction (Noté sur 10) :</h4>
-            <p>**${questionData.sujet}**</p>
+            <p>${formatMarkdownBold(questionData.sujet)}</p>
             <textarea id="ia-answer" rows="10" placeholder="Rédigez votre paragraphe argumenté ici (min. 50 caractères)..."></textarea>
             <button onclick="submitParagrapheIA()">Soumettre à l'IA pour correction</button>
         </div>
@@ -446,7 +451,7 @@ function submitQCM() {
     }
 
     const userAnswer = selectedOption.value;
-    const correctAnswer = questionData.bonne_reponse; 
+    const correctAnswer = formatMarkdownBold(questionData.bonne_reponse); // Formate aussi la bonne réponse pour comparaison exacte
     const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1; 
 
     if (typeof correctAnswer === 'undefined' || correctAnswer === null) {
@@ -474,7 +479,7 @@ function submitQCM() {
     
     feedback += `<p>La bonne réponse était : **${correctAnswer}**.</p>`; 
     if (questionData.explication) {
-        feedback += `<p>Explication : ${questionData.explication}</p>`;
+        feedback += `<p>Explication : ${formatMarkdownBold(questionData.explication)}</p>`;
     }
 
     resultDiv.innerHTML = feedback;
@@ -560,3 +565,41 @@ function showFinalScore() {
     document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer</button>';
     isQuizRunning = false;
 }
+
+// --- Instructions pour la fonctionnalité de Compréhension Orale / Dictée ---
+/*
+Pour implémenter la compréhension orale ou la dictée, voici les étapes et les outils Firebase que tu pourrais utiliser :
+
+1.  **Génération du texte (IA) :**
+    *   Ton `callGenerationAPI` actuel peut déjà être étendu. Tu demanderais à l'IA de générer un texte spécifique pour une dictée ou un exercice de compréhension orale, en précisant la longueur et la difficulté.
+
+2.  **Conversion Texte-vers-Voix (TTS) :**
+    *   C'est la partie la plus critique et elle nécessite un service externe. Des options comme **Google Cloud Text-to-Speech** (qui s'intègre bien avec Google Cloud et donc Firebase) ou l'API TTS d'OpenAI sont excellentes.
+    *   **Comment l'appeler :** Tu ne peux pas appeler une API TTS directement depuis ton frontend (pour des raisons de sécurité de ta clé API). Il faudrait créer une nouvelle route sur ton `server.js` (ou mieux, une **Cloud Function for Firebase**) qui :
+        *   Reçoit le texte généré par ton `script.js`.
+        *   Appelle l'API TTS avec ta clé API sécurisée.
+        *   Reçoit le fichier audio (ou un lien vers celui-ci).
+
+3.  **Stockage du fichier audio :**
+    *   Une fois l'audio généré par le service TTS, il devrait être stocké. **Cloud Storage for Firebase** est parfait pour cela.
+    *   Ton backend (Cloud Function ou `server.js`) pourrait uploader l'audio généré sur Cloud Storage, puis renvoyer l'URL publique de ce fichier audio à ton frontend.
+
+4.  **Interface Utilisateur (Frontend - `script.js` et `index.html`) :**
+    *   **Nouvelle section dans `index.html` :** Ajoute des boutons pour "Démarrer une Dictée" ou "Démarrer Compréhension Orale", un lecteur audio (`<audio>`), une zone de texte pour la réponse de l'élève (dictée), et/ou des champs pour les questions de compréhension.
+    *   **Logique dans `script.js` :**
+        *   Une nouvelle fonction `startAudioQuiz(type)` similaire à `startQuiz`.
+        *   Appellerait ton backend pour obtenir le texte et l'audio.
+        *   Gérerait la lecture de l'audio (`<audio>` HTML element).
+        *   Mettrait à jour un compteur du nombre d'écoutes permises.
+        *   Collecterait la réponse de l'utilisateur.
+        *   Enverrait la réponse au backend pour correction (voir étape 5).
+
+5.  **Correction (Backend - `server.js` ou Cloud Function) :**
+    *   **Pour la dictée :** Ton `server.js` pourrait recevoir le texte tapé par l'élève et le comparer au texte original que l'IA avait généré. Tu pourrais utiliser l'IA de correction pour évaluer la précision de la dictée et donner une note.
+    *   **Pour la compréhension orale :** L'IA (via une nouvelle route de correction sur ton `server.js`) recevrait les réponses de l'élève aux questions de compréhension et le texte original de l'audio, puis jugerait la pertinence des réponses.
+
+**En résumé, la "méga update" est une architecture complète :**
+`Frontend (script.js)` <--> `Backend (server.js ou Cloud Functions)` <--> `API OpenAI (texte)` & `API TTS (audio)` <--> `Cloud Storage (fichiers audio)`
+
+C'est un projet passionnant, mais il faudrait le découper en plusieurs étapes d'implémentation ! Pour l'instant, ton application est optimisée pour les questions écrites.
+*/
