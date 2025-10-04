@@ -1,4 +1,4 @@
-// script.js (Version avec correction finale des chemins de fichiers et gestion des erreurs)
+// script.js (Version avec correction DÉFINITIVE des chemins de fichiers)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
@@ -72,6 +72,7 @@ let listenCount = 0;
 let maxListens = 3; 
 
 // --- STRUCTURE DES MATIÈRES ---
+// Basée sur les chemins de fichiers que tu as fournis.
 const STRUCTURE = {
     "Anglais": {
         "Culture": [ 
@@ -171,9 +172,15 @@ function displayMenu() {
             chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; 
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
-                // --- CORRECTION CLÉ ICI : TOUJOURS INCLURE LE NOM DU CHAPITRE DANS LE CHEMIN ---
-                // D'après les erreurs 404, il semble que tous les "chapitres" soient de vrais sous-dossiers.
-                const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                let path;
+                // --- CORRECTION CLÉ ICI : SEULEMENT LES MATHS ONT UN SOUS-DOSSIER DE CHAPITRE RÉEL ---
+                if (matiereName === "Mathematiques") {
+                    path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                } else {
+                    // Pour toutes les autres matières, le fichier est directement dans le dossier de la matière.
+                    // Le 'chapitreName' est seulement pour l'affichage dans le menu.
+                    path = `${MATIERES_BASE_PATH}/${matiereName}/${lecon.file}`;
+                }
                 
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" data-path="${path}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
@@ -710,7 +717,7 @@ function showFinalScore() {
         feedback += `<p>Votre performance globale est de **${userScore.toFixed(2)} / ${totalQuizPoints} points**.</p>`;
         feedback += `<h3>Votre note estimée sur 20 est : **${finalNoteRounded} / 20**</h3>`;
     } else {
-         feedback += `<p>Ce quiz ne contenait que des sujets de rédaction dont le score n'a pas pu être extrait pour le calcul final.</p>`;
+         feedback += `<p>Ce quiz ne contenait que des sujets de rédaction dont le score n'a pas pu être extrait pour le calcul final et/ou des erreurs empêchant un calcul total.</p>`;
     }
 
     document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer</button>';
