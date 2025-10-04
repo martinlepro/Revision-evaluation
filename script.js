@@ -1,4 +1,4 @@
-// script.js (Version mise à jour avec toutes les modifications et débogage détaillé)
+// script.js (Version mise à jour avec débogage des données QCM)
 
 window.onerror = function(msg, url, line, col, error) {
     document.getElementById('debug').textContent =
@@ -39,7 +39,7 @@ const STRUCTURE = {
             { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
         ]
     },
-    "Science-de-la-Vie-et-de-la-Terre": {
+    "SVT": {
         "Biologie": [
             { name: "Le Phénotype", file: "Phénotype.txt" } 
         ]
@@ -139,6 +139,7 @@ async function startQuiz() {
     document.getElementById('quiz-view').style.display = 'block';
     document.getElementById('question-container').innerHTML = '<p>Préparation du quiz... ⏳</p>';
     document.getElementById('ai-generation-feedback').innerHTML = ''; // Nettoyer l'ancien feedback
+    document.getElementById('debug').textContent = ''; // Vider le div debug
 
     currentQuizData = [];
     currentQuestionIndex = 0;
@@ -168,7 +169,20 @@ async function startQuiz() {
             if (jsonQuestions.questions && Array.isArray(jsonQuestions.questions)) {
                 currentQuizData = jsonQuestions.questions;
                 generationFeedbackDiv.innerHTML = `<p class="correct">✅ Questions générées ! Début du quiz.</p>`;
+                
                 if (currentQuizData.length > 0) {
+                    // --- NOUVEAU DÉBOGAGE ICI ---
+                    const firstQCM = currentQuizData.find(q => q.type === 'qcm');
+                    if (firstQCM) {
+                        document.getElementById('debug').textContent = 
+                            "Structure de la première question QCM détectée : \n" + 
+                            JSON.stringify(firstQCM, null, 2); // Affiche la question en JSON formaté
+                    } else {
+                        document.getElementById('debug').textContent = 
+                            "Aucune question QCM trouvée dans les données générées.";
+                    }
+                    // --- FIN NOUVEAU DÉBOGAGE ---
+
                     displayCurrentQuestion();
                 } else {
                     document.getElementById('question-container').innerHTML = `<p>L'IA n'a généré aucune question pour ces sujets. Veuillez réessayer.</p>`;
@@ -182,7 +196,6 @@ async function startQuiz() {
             document.getElementById('question-container').innerHTML = `<p class="error">❌ L'IA n'a pas pu générer le contenu. Réponse inattendue du serveur.</p>`;
         }
     } catch (error) {
-        // --- MODIFICATION ICI POUR UN MEILLEUR DÉBOGAGE ---
         console.error("Erreur lors de la génération par l'IA:", error);
         document.getElementById('question-container').innerHTML = `<p class="error">❌ Erreur de connexion à l'IA ou format de réponse invalide.
             Détails: ${error.message}. <br>
@@ -222,7 +235,6 @@ async function callGenerationAPI(topicContent, type, count) {
     
     if (!response.ok) {
         const errorBody = await response.text(); // Capture le corps de la réponse même en cas d'erreur
-        // --- MODIFICATION ICI POUR UN MESSAGE D'ERREUR TRÈS DÉTAILLÉ ---
         throw new Error(`Erreur réseau lors de la génération: Statut ${response.status} (${response.statusText}). Réponse du serveur: ${errorBody || "Aucun détail de réponse."}`);
     }
     return response.json();
@@ -324,8 +336,9 @@ function submitQCM() {
     }
 
     const userAnswer = selectedOption.value;
-    const correctAnswer = questionData.reponse_correcte;
+    const correctAnswer = questionData.reponse_correcte; // C'est cette variable qui est undefined
 
+    // Désactiver les boutons radio pour éviter les changements après validation
     optionsContainer.querySelectorAll('input').forEach(input => input.disabled = true);
     document.querySelector('.qcm-question button').style.display = 'none'; 
 
@@ -337,7 +350,8 @@ function submitQCM() {
         feedback = `<p class="incorrect">❌ **Mauvaise réponse.**</p>`;
     }
     
-    feedback += `<p>La bonne réponse était : **${correctAnswer}**.</p>`;
+    // Afficher l'explication et la réponse correcte
+    feedback += `<p>La bonne réponse était : **${correctAnswer}**.</p>`; // Affichera ce que questionData.reponse_correcte contient
     if (questionData.explication) {
         feedback += `<p>Explication : ${questionData.explication}</p>`;
     }
@@ -357,6 +371,7 @@ async function submitParagrapheIA() {
         return;
     }
     
+    // Désactiver la zone de texte et le bouton
     document.getElementById('ia-answer').disabled = true;
     document.querySelector('.paragraphe-sujet button').disabled = true;
 
@@ -383,7 +398,6 @@ async function submitParagrapheIA() {
 
     } catch (error) {
         console.error("Erreur lors de la correction:", error);
-        // --- MODIFICATION ICI POUR UN MEILLEUR DÉBOGAGE ---
         resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA lors de la correction.
             Détails: ${error.message}. <br>
             Vérifiez l'URL de votre serveur Render et les logs de votre backend.
