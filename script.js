@@ -1,4 +1,4 @@
-// script.js (Modifié pour le tirage aléatoire de 3 types de questions)
+// script.js (Début du fichier, incluant la nouvelle structure de fichiers .txt)
 
 window.onerror = function(msg, url, line, col, error) {
     document.getElementById('debug').textContent =
@@ -7,7 +7,7 @@ window.onerror = function(msg, url, line, col, error) {
 console.log("script.js chargé.");
 
 const MATIERES_BASE_PATH = 'matieres';
-let selectedItems = []; // Stocke les objets de leçon sélectionnés { path, type, name }
+let selectedItems = []; // Stocke les objets de leçon sélectionnés { path, name }
 let currentQuizData = []; // Données des questions générées par l'IA
 let currentQuestionIndex = 0;
 let totalQuizPoints = 0; 
@@ -19,48 +19,55 @@ const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
-// --- Gestion de la structure des matières (Mise à jour) ---
-// Note : Le type ici est un "type de leçon", pas le type de question générée.
-// Le tirage aléatoire est fait dans startQuiz.
+// --- Gestion de la structure des matières (Catalogue des leçons) ---
+// La propriété 'type' a été RETIRÉE. Le type de question est choisi aléatoirement par l'IA.
 const STRUCTURE = {
     "Mathematiques": {
-        "Nombres_Premiers": [
-            { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" } // Leçon support
+        "G1_STATISTIQUES": [
+            { name: "Triangles et Proportionnalité", file: "Triangles et proportionnalité.txt" } 
         ],
         "T1_STATISTIQUES": [
-            { name: "Statistiques (QCM)", file: "lecon_statistiques.txt", type: "qcm" } 
-        ],
-        "Les_Aires": [
-            { name: "Les Aires (Paragraphe)", file: "lecon_aires.txt", type: "paragraphe" }
+            { name: "Statistiques", file: "Statistiques.txt" } 
         ]
     },
     "Histoire_Geo": {
-        "La_Revolution_Francaise": [
-            { name: "Révolution Française", file: "lecon_revolution.txt", type: "paragraphe" }
-        ],
-        "Les_Fleuves_du_Monde": [
-            { name: "Les Fleuves du Monde", file: "lecon_fleuves.txt", type: "qcm" }
+        "Les_Aires_Urbaines": [
+            { name: "Les Aires Urbaines", file: "Les aires urbaines.txt" }
         ]
     },
-    "Allemand": {
-        "<prefixe verbe>": [
-            { name: "Les Verbes à Préfixe", file: "lecon_prefixe_verbe.txt", type: "qcm" }
-        ],
-        "<facile,tenter,important>": [
-            { name: "Vocabulaire Facile", file: "lecon_vocabulaire_facile.txt", type: "qcm" }
-        ],
-        "Grammaire_Base": [
-            { name: "Grammaire de Base", file: "lecon_grammaire_base.txt", type: "qcm" }
+    "Physique_Chimie": {
+        "Atomes_et_Tableau_Periodique": [
+            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" }
         ]
     },
-    "Art_Plastique": { 
-        "<description>": [
-            { name: "Analyse d'Œuvre", file: "lecon_description_oeuvre.txt", type: "paragraphe" }
+    "Anglais": {
+        "Les_Pays_Anglophones": [
+            { name: "Les Pays Anglophones", file: "Les pays anglophones.txt" }
+        ]
+    },
+    "Science_de_la_Vie_et_de_la_Terre": { // Nom complet pour correspondre au chemin
+        "Le_Phenotype": [
+            { name: "Le Phénotype", file: "Phénotype.txt" }
+        ]
+    },
+    "Technologie": {
+        "Systemes_Automatises": [
+            { name: "Les Systèmes Automatisés", file: "Les-systèmes-automatisés.txt" }
+        ]
+    },
+    "Musique": {
+        "Chanson_Engagee": [
+            { name: "La Chanson Engagée", file: "Chanson engagée.txt" }
+        ]
+    },
+    "Francais": {
+        "Autoportrait": [
+            { name: "L'Autoportrait", file: "Autoportrait.txt" }
         ]
     }
 };
 
-// --- Initialisation et chargement des ressources (inchangé) ---
+// --- Initialisation et chargement des ressources ---
 
 document.addEventListener('DOMContentLoaded', () => {
     loadStructure();
@@ -74,12 +81,14 @@ function loadStructure() {
     for (const matiere in STRUCTURE) {
         const matiereDiv = document.createElement('div');
         matiereDiv.className = 'matiere';
+        // Affiche la clé Matière en remplaçant les _ par des espaces pour la lisibilité
         matiereDiv.innerHTML = `<h2>${matiere.replace(/_/g, ' ')}</h2>`;
         
         const ul = document.createElement('ul');
 
         for (const chapitre in STRUCTURE[matiere]) {
             const chapitreLi = document.createElement('li');
+            // Affiche la clé Chapitre en remplaçant les _ par des espaces pour la lisibilité
             chapitreLi.innerHTML = `<h3>${chapitre.replace(/_/g, ' ')}</h3>`;
             const itemsList = document.createElement('ul');
 
@@ -88,12 +97,13 @@ function loadStructure() {
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 
-                const chapterPath = `${matiere}/${chapitre.replace(/[<>]/g, '')}`;
+                // Le chemin d'accès au fichier est reconstruit ici : matieres/Matiere/Chapitre/Fichier.txt
+                const chapterPath = `${matiere}/${chapitre}`;
                 const fullPath = `${MATIERES_BASE_PATH}/${chapterPath}/${itemObject.file}`;
                 
+                // L'objet stocké dans le dataset ne contient que le chemin et le nom
                 checkbox.dataset.item = JSON.stringify({ 
                     path: fullPath,
-                    type: itemObject.type, // Type de la leçon
                     name: itemObject.name
                 });
                 
@@ -102,7 +112,8 @@ function loadStructure() {
 
                 const label = document.createElement('label');
                 label.htmlFor = fullPath;
-                label.textContent = `${itemObject.name} (${itemObject.type.toUpperCase()})`; 
+                // Affiche uniquement le nom de la leçon
+                label.textContent = itemObject.name; 
 
                 itemLi.appendChild(checkbox);
                 itemLi.appendChild(label);
@@ -129,7 +140,6 @@ function updateSelection(event) {
     const selectionDisplay = document.getElementById('selected-items');
     selectionDisplay.textContent = selectedItems.map(item => item.name).join(' | ');
 }
-
 // --- Logique principale du Quiz (Mise à jour pour le tirage aléatoire) ---
 
 // Fonction pour choisir aléatoirement le type de question à générer
