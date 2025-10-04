@@ -39,7 +39,7 @@ const STRUCTURE = {
             { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
         ]
     },
-    "SVT": {
+    "Science-de-la-Vie-et-de-la-Terre": {
         "Biologie": [
             { name: "Le Phénotype", file: "Phénotype.txt" } 
         ]
