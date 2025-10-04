@@ -1,4 +1,4 @@
-// script.js (Version corrigée des chemins de fichiers)
+// script.js (Version avec correction finale des chemins de fichiers et gestion des erreurs)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
@@ -72,7 +72,6 @@ let listenCount = 0;
 let maxListens = 3; 
 
 // --- STRUCTURE DES MATIÈRES ---
-// Basée sur les chemins de fichiers que tu as fournis.
 const STRUCTURE = {
     "Anglais": {
         "Culture": [ 
@@ -172,15 +171,9 @@ function displayMenu() {
             chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; 
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
-                let path;
-                // --- CORRECTION CLÉ ICI : LOGIQUE CONDITIONNELLE POUR LE CHEMIN DU FICHIER ---
-                // Si la matière est "Mathematiques", le chapitre est un VRAI sous-dossier.
-                // Sinon, le "chapitreName" est purement pour l'affichage dans le menu, le fichier est directement sous le dossier de la matière.
-                if (matiereName === "Mathematiques") {
-                    path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
-                } else {
-                    path = `${MATIERES_BASE_PATH}/${matiereName}/${lecon.file}`;
-                }
+                // --- CORRECTION CLÉ ICI : TOUJOURS INCLURE LE NOM DU CHAPITRE DANS LE CHEMIN ---
+                // D'après les erreurs 404, il semble que tous les "chapitres" soient de vrais sous-dossiers.
+                const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
                 
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" data-path="${path}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
@@ -313,6 +306,7 @@ async function startQuiz(quizType = 'mixed') {
         console.error("Erreur lors de la génération par l'IA:", error);
         document.getElementById('question-container').innerHTML = `<p class="error">❌ Erreur de connexion à l'IA ou format de réponse invalide.
             Détails: ${error.message}. <br>
+            **ATTENTION :** Si l'erreur mentionne "Rate limit reached", patientez avant de réessayer ou mettez à jour votre compte OpenAI.
             Vérifiez l'URL de votre serveur Render et les logs de votre backend.
         </p>`;
         isQuizRunning = false;
@@ -535,8 +529,6 @@ function renderAudioDictation(questionData, container) {
     const playButton = document.getElementById('play-audio-btn');
     const listenCountDisplay = document.getElementById('listen-count-display');
 
-    // Générer et jouer l'audio la première fois
-    // Désactive le bouton d'écoute pour éviter les clics avant que l'audio ne soit prêt
     playButton.disabled = true; 
     generateAndPlayAudioFromBackend(
         questionData.text, 
@@ -545,8 +537,6 @@ function renderAudioDictation(questionData, container) {
         listenCountDisplay
     );
 
-    // L'écouteur d'événement est attaché après l'appel à generateAndPlayAudioFromBackend
-    // car le bouton est réactivé à la fin de cette fonction si tout va bien.
     playButton.addEventListener('click', () => {
         if (currentAudioPlayer && listenCount < maxListens) {
             currentAudioPlayer.play();
@@ -673,7 +663,7 @@ function submitDictation() {
 
     const originalText = questionData.text;
 
-    const normalizedUserAnswer = userAnswer.toLowerCase().replace(/[.,!?;:']/g, '').replace(/\s+/g, ' ').trim(); // Plus de nettoyage
+    const normalizedUserAnswer = userAnswer.toLowerCase().replace(/[.,!?;:']/g, '').replace(/\s+/g, ' ').trim(); 
     const normalizedOriginalText = originalText.toLowerCase().replace(/[.,!?;:']/g, '').replace(/\s+/g, ' ').trim();
 
     let score = 0;
