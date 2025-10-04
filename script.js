@@ -1,61 +1,71 @@
-// script.js (Version mise à jour avec débogage des données QCM et affichage des logs/warns)
+// script.js (Version corrigée: Renommer 'reponse_correcte' en 'bonne_reponse' pour les QCM)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error; // Ajout pour capturer les erreurs via appendToDebug
 
 function appendToDebug(message, type = 'log') {
     if (debugElement) {
         const p = document.createElement('p');
+        p.style.whiteSpace = 'pre-wrap'; // Pour conserver les retours à la ligne dans le JSON
         p.textContent = `[${type.toUpperCase()}] ${new Date().toLocaleTimeString()} : ${message}`;
-        if (type === 'error' || type === 'warn') {
-            p.style.color = type === 'error' ? 'red' : 'orange';
+        if (type === 'error') {
+            p.style.color = 'red';
+        } else if (type === 'warn') {
+            p.style.color = 'orange';
+        } else if (type === 'info') { // Pour le JSON de la question
+            p.style.color = 'blue';
         }
         debugElement.appendChild(p);
-        // Fait défiler le debugElement vers le bas pour voir les derniers messages
         debugElement.scrollTop = debugElement.scrollHeight;
     }
 }
 
 // Override console.log
 console.log = function(...args) {
-    originalConsoleLog.apply(console, args); // Appelle la fonction console.log originale
+    originalConsoleLog.apply(console, args); 
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
     appendToDebug(message, 'log');
 };
 
 // Override console.warn
 console.warn = function(...args) {
-    originalConsoleWarn.apply(console, args); // Appelle la fonction console.warn originale
+    originalConsoleWarn.apply(console, args); 
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
     appendToDebug(message, 'warn');
+};
+
+// Override console.error
+console.error = function(...args) {
+    originalConsoleError.apply(console, args); 
+    const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
+    appendToDebug(message, 'error');
 };
 
 // Modifie window.onerror pour utiliser appendToDebug
 window.onerror = function(msg, url, line, col, error) {
     const errorMessage = "Erreur JS : " + msg + "\nLigne: " + line + "\n" + (error ? error.stack : "");
     appendToDebug(errorMessage, 'error');
-    return false; // Permet de prévenir la gestion par défaut de l'erreur par le navigateur
+    return false; 
 };
 // --- FIN FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 
-console.log("script.js chargé."); // Ce log apparaîtra maintenant dans #debug et la console
+console.log("script.js chargé."); 
 
 const MATIERES_BASE_PATH = 'matieres';
-let selectedItems = []; // Stocke les objets de leçon sélectionnés { path, name }
-let currentQuizData = []; // Données des questions générées par l'IA
+let selectedItems = []; 
+let currentQuizData = []; 
 let currentQuestionIndex = 0;
 let totalQuizPoints = 0; 
 let userScore = 0; 
 let isQuizRunning = false; 
 
-// URL de votre serveur proxy sécurisé sur Render
 const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
-// --- Gestion de la structure des matières (Catalogue des leçons) ---
 const STRUCTURE = {
     "Mathematiques": {
         "G1-STATISTIQUES": [ 
@@ -101,8 +111,6 @@ const STRUCTURE = {
         ]
     }
 };
-
-// --- Initialisation et rendu du menu ---
 
 document.addEventListener('DOMContentLoaded', () => {
     displayMenu();
@@ -174,9 +182,8 @@ async function startQuiz() {
     document.getElementById('selection-view').style.display = 'none';
     document.getElementById('quiz-view').style.display = 'block';
     document.getElementById('question-container').innerHTML = '<p>Préparation du quiz... ⏳</p>';
-    document.getElementById('ai-generation-feedback').innerHTML = ''; // Nettoyer l'ancien feedback
+    document.getElementById('ai-generation-feedback').innerHTML = ''; 
     
-    // Vider le div debug au début du quiz
     if (debugElement) {
         debugElement.innerHTML = ''; 
         appendToDebug("Début du quiz. Vide le journal de débogage.", 'info');
@@ -269,7 +276,7 @@ async function callGenerationAPI(topicContent, type, count) {
     }
 
     const full_prompt = `${instruction} Le résultat doit être un tableau JSON nommé "questions", où chaque objet représente une question, et inclut un champ "type" ("qcm" ou "paragraphe_ia"). Contenu de la leçon: """${topicContent}"""`;
-    console.log("Envoi du prompt à l'API de génération:", full_prompt.substring(0, 200) + "..."); // Limite l'affichage pour la lisibilité
+    console.log("Envoi du prompt à l'API de génération:", full_prompt.substring(0, 200) + "..."); 
 
     const response = await fetch(GENERATION_API_URL, {
         method: 'POST',
@@ -285,7 +292,7 @@ async function callGenerationAPI(topicContent, type, count) {
 }
 
 async function callCorrectionAPI(prompt) {
-    console.log("Envoi du prompt à l'API de correction:", prompt.substring(0, 200) + "..."); // Limite l'affichage
+    console.log("Envoi du prompt à l'API de correction:", prompt.substring(0, 200) + "..."); 
     const response = await fetch(CORRECTION_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -331,7 +338,7 @@ function displayCurrentQuestion() {
 
 function renderQCM(questionData, container) {
     totalQuizPoints += 1; 
-    console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue:", questionData.reponse_correcte);
+    console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue (dans les données):", questionData.bonne_reponse); // CHANGEMENT DE NOM ICI
 
     let html = `
         <div class="qcm-question">
@@ -387,7 +394,7 @@ function submitQCM() {
     }
 
     const userAnswer = selectedOption.value;
-    const correctAnswer = questionData.reponse_correcte; // C'est cette variable qui est undefined
+    const correctAnswer = questionData.bonne_reponse; // <<< LE CHANGEMENT CRUCIAL EST ICI !!!
     console.log("Réponse utilisateur QCM:", userAnswer, " | Réponse correcte attendue:", correctAnswer);
 
 
@@ -404,7 +411,8 @@ function submitQCM() {
         console.log("Mauvaise réponse QCM.");
     }
     
-    feedback += `<p>La bonne réponse était : **${correctAnswer}**.</p>`;
+    // Afficher l'explication et la bonne réponse (maintenant elle ne sera plus undefined)
+    feedback += `<p>La bonne réponse était : **${correctAnswer}**.</p>`; 
     if (questionData.explication) {
         feedback += `<p>Explication : ${questionData.explication}</p>`;
     }
