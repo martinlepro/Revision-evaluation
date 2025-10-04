@@ -1,4 +1,4 @@
-// script.js (Version mise à jour avec nouvelle structure, correction LaTeX et logs boutons)
+// script.js (Version finale avec toutes les fonctionnalités et corrections)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
@@ -15,7 +15,7 @@ function appendToDebug(message, type = 'log') {
             p.style.color = 'red';
         } else if (type === 'warn') {
             p.style.color = 'orange';
-        } else if (type === 'info') {
+        } else if (type === 'info') { // Pour le JSON de la question et autres infos importantes
             p.style.color = 'blue';
         }
         debugElement.appendChild(p);
@@ -54,7 +54,7 @@ window.onerror = function(msg, url, line, col, error) {
 
 console.log("script.js chargé."); 
 
-const MATIERES_BASE_PATH = 'matieres'; // Conserve le chemin de base "matieres" pour tous les fichiers
+const MATIERES_BASE_PATH = 'matieres'; 
 let selectedItems = []; 
 let currentQuizData = []; 
 let currentQuestionIndex = 0;
@@ -67,9 +67,11 @@ const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
 // --- NOUVELLE STRUCTURE DES MATIÈRES ---
+// Basée sur les chemins de fichiers que tu as fournis.
+// Seules les matières Mathématiques ont le chapitre comme sous-dossier réel.
 const STRUCTURE = {
     "Anglais": {
-        "Culture": [ 
+        "Culture": [ // "Culture" est une catégorie d'affichage, pas un sous-dossier dans le chemin du fichier
             { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
         ]
     },
@@ -90,37 +92,36 @@ const STRUCTURE = {
         ]
     },
     "Histoire_Geo": {
-        "Geographie": [
+        "Geographie": [ // Catégorie d'affichage
             { name: "Les aires urbaines", file: "Les aires urbaines.txt" } 
         ]
     },
     "Mathematiques": {
-        // Le nom du chapitre est "G1-Triangles et proportionnalité" selon ta demande
-        "G1-Triangles et proportionnalité": [ 
+        "G1-Triangles et proportionnalité": [ // C'est un sous-dossier réel pour les maths
             { name: "Triangles et proportionnalité", file: "Triangles et proportionnalité.txt" } 
         ],
-        "T1_STATISTIQUES": [
+        "T1_STATISTIQUES": [ // C'est un sous-dossier réel pour les maths
             { name: "Statistiques", file: "Statistiques.txt" } 
         ]
     },
     "Physique-Chimie": {
-        "Chimie": [
+        "Chimie": [ // Catégorie d'affichage
             { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
         ]
     },
-    "Science-de-la-Vie-et-de-la-Terre": { // Nom de la matière complet pour correspondre au chemin
+    "Science-de-la-Vie-et-de-la-Terre": { // Renommé de SVT, "Biologie" est une catégorie d'affichage
         "Biologie": [ 
             { name: "L'Hérédité (Génétique)", file: "L'Hérédité (Génétique).txt" },
             { name: "Le programme génétique", file: "Le programme génétique.txt" }
         ]
     },
     "Musique": {
-        "Histoire": [
+        "Histoire": [ // Catégorie d'affichage
             { name: "La Chanson Engagée", file: "Chanson engagée.txt" } 
         ]
     },
     "Technologie": {
-        "Systèmes": [
+        "Systèmes": [ // Catégorie d'affichage
             { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" } 
         ]
     }
@@ -129,7 +130,22 @@ const STRUCTURE = {
 
 document.addEventListener('DOMContentLoaded', () => {
     displayMenu();
-    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+    // Boutons de démarrage des quiz
+    document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixed')); // Quiz Mixte
+    // NOUVEAU : Boutons pour QCM ou Paragraphe uniquement
+    const startQCMBtn = document.getElementById('start-qcm-btn');
+    if (startQCMBtn) {
+        startQCMBtn.addEventListener('click', () => startQuiz('qcm'));
+    } else {
+        console.warn("Bouton 'start-qcm-btn' non trouvé. Assurez-vous qu'il existe dans votre HTML.");
+    }
+
+    const startParagrapheBtn = document.getElementById('start-paragraphe-btn');
+    if (startParagrapheBtn) {
+        startParagrapheBtn.addEventListener('click', () => startQuiz('paragraphe_ia'));
+    } else {
+        console.warn("Bouton 'start-paragraphe-btn' non trouvé. Assurez-vous qu'il existe dans votre HTML.");
+    }
 });
 
 function displayMenu() {
@@ -147,8 +163,14 @@ function displayMenu() {
             chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; // Affiche "G1 Triangles et proportionnalité"
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
-                // Construction du data-path pour les cases à cocher
-                const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                let path;
+                // Logique conditionnelle pour le chemin du fichier
+                if (matiereName === "Mathematiques") {
+                    path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                } else {
+                    path = `${MATIERES_BASE_PATH}/${matiereName}/${lecon.file}`;
+                }
+
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" data-path="${path}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
                 label.querySelector('input').addEventListener('change', toggleSelection);
@@ -177,17 +199,27 @@ function updateSelectedItems() {
     const selectedBox = document.getElementById('selected-items');
     if (selectedItems.length === 0) {
         selectedBox.innerHTML = 'Aucun sujet sélectionné';
+        // Rendre tous les boutons de démarrage de quiz invisibles
         document.getElementById('start-quiz-btn').style.display = 'none';
+        const startQCMBtn = document.getElementById('start-qcm-btn');
+        if (startQCMBtn) startQCMBtn.style.display = 'none';
+        const startParagrapheBtn = document.getElementById('start-paragraphe-btn');
+        if (startParagrapheBtn) startParagrapheBtn.style.display = 'none';
     } else {
         selectedBox.innerHTML = selectedItems.map(item => item.name).join(', ');
+        // Rendre tous les boutons de démarrage de quiz visibles
         document.getElementById('start-quiz-btn').style.display = 'block';
+        const startQCMBtn = document.getElementById('start-qcm-btn');
+        if (startQCMBtn) startQCMBtn.style.display = 'block';
+        const startParagrapheBtn = document.getElementById('start-paragraphe-btn');
+        if (startParagrapheBtn) startParagrapheBtn.style.display = 'block';
     }
 }
 
 
 // --- Lancement et Génération du Quiz ---
 
-async function startQuiz() {
+async function startQuiz(quizType = 'mixed') { // Ajout de quizType
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet.");
         return;
@@ -211,9 +243,12 @@ async function startQuiz() {
     userScore = 0;
     totalQuizPoints = 0;
 
-    const NUM_QUESTIONS_TO_GENERATE = 5; 
+    // Nombre de questions aléatoire entre 5 et 10
+    const NUM_QUESTIONS_TO_GENERATE = Math.floor(Math.random() * 6) + 5; 
+    console.log(`Demande de génération de ${NUM_QUESTIONS_TO_GENERATE} questions de type '${quizType}'.`);
+
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
-    generationFeedbackDiv.innerHTML = `<p>Génération de ${NUM_QUESTIONS_TO_GENERATE} questions par sujet sélectionné (${selectedItems.length} sujet(s)).</p>`;
+    generationFeedbackDiv.innerHTML = `<p>Génération de ${NUM_QUESTIONS_TO_GENERATE} questions de type ${quizType} par sujet sélectionné (${selectedItems.length} sujet(s)).</p>`;
     
     let combinedContent = '';
     try {
@@ -229,7 +264,8 @@ async function startQuiz() {
     }
     
     try {
-        const aiData = await callGenerationAPI(combinedContent, 'mixed', NUM_QUESTIONS_TO_GENERATE); 
+        // Passe le quizType à callGenerationAPI
+        const aiData = await callGenerationAPI(combinedContent, quizType, NUM_QUESTIONS_TO_GENERATE); 
         console.log("Données AI brutes reçues:", aiData);
 
         if (aiData && aiData.generated_content) {
@@ -285,13 +321,13 @@ async function callGenerationAPI(topicContent, type, count) {
     if (type === 'mixed') {
         instruction = `Génère ${count} questions de quiz basées sur le contenu de leçon suivant. 
         Pour les questions, utilise un langage clair et direct. Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML** (par exemple, écris "AM divisé par AB" ou "AM/AB" au lieu de "\\frac{AM}{AB}").
-        Mélange des questions à choix multiples (QCM) avec une seule bonne réponse et des sujets de rédaction de paragraphe.
-        Pour les QCM, fournis la question (avec la clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication').
+        Mélange des questions à choix multiples (QCM) et des sujets de rédaction de paragraphe.
+        Pour chaque QCM, fournis la question (clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication'). **Attribue également un champ 'points' à chaque QCM avec une valeur numérique entre 1 et 3 (plus la question est difficile, plus de points).**
         Pour les sujets de paragraphe, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
     } else if (type === 'qcm') {
-        instruction = `Génère ${count} questions à choix multiples (QCM) avec une seule bonne réponse basées sur le contenu de leçon suivant. 
-        Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML** (par exemple, écris "AM divisé par AB" ou "AM/AB" au lieu de "\\frac{AM}{AB}").
-        Pour chaque QCM, fournis la question (avec la clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication').`;
+        instruction = `Génère ${count} questions à choix multiples (QCM) basées sur le contenu de leçon suivant. 
+        Pour les questions, utilise un langage clair et direct. Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML**.
+        Pour chaque QCM, fournis la question (clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication'). **Attribue également un champ 'points' à chaque QCM avec une valeur numérique entre 1 et 3 (plus la question est difficile, plus de points).**`;
     } else if (type === 'paragraphe_ia') {
         instruction = `Génère ${count} sujets de rédaction de paragraphe basés sur le contenu de leçon suivant. 
         Pour chaque sujet, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
@@ -361,12 +397,14 @@ function displayCurrentQuestion() {
 }
 
 function renderQCM(questionData, container) {
-    totalQuizPoints += 1; 
-    console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue (dans les données):", questionData.bonne_reponse); 
+    // Ajouter les points du QCM au total des points possibles du quiz
+    const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1;
+    totalQuizPoints += qcmPoints; 
+    console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue (dans les données):", questionData.bonne_reponse, `(vaut ${qcmPoints} points)`); 
 
     let html = `
         <div class="qcm-question">
-            <h4>${questionData.question}</h4>
+            <h4>${questionData.question} <span class="qcm-points">(${qcmPoints} points)</span></h4>
             <div id="options-container">
     `;
 
@@ -389,6 +427,7 @@ function renderQCM(questionData, container) {
 
 
 function renderParagraphe(questionData, container) {
+    // Les paragraphes sont notés sur 10 par l'IA, donc ils ajoutent 10 au total des points possibles
     totalQuizPoints += 10; 
     console.log("Rendu Paragraphe. Sujet:", questionData.sujet);
 
@@ -406,7 +445,7 @@ function renderParagraphe(questionData, container) {
 // --- Soumission et Correction ---
 
 function submitQCM() {
-    console.log("submitQCM() déclenché."); // Log pour confirmer que le bouton a été cliqué
+    console.log("submitQCM() déclenché."); 
     const questionData = currentQuizData[currentQuestionIndex];
     const optionsContainer = document.getElementById('options-container');
     const resultDiv = document.getElementById('correction-feedback');
@@ -420,8 +459,8 @@ function submitQCM() {
 
     const userAnswer = selectedOption.value;
     const correctAnswer = questionData.bonne_reponse; 
-    
-    // Ajout d'une vérification pour s'assurer que correctAnswer est bien défini
+    const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1; // Récupère les points attribués ou 1 par défaut
+
     if (typeof correctAnswer === 'undefined' || correctAnswer === null) {
         appendToDebug(`Erreur: La bonne réponse ('bonne_reponse') est undefined ou null pour cette question QCM. Question ID: ${questionData.id || 'N/A'}`, 'error');
         resultDiv.innerHTML = `<p class="error">❌ Erreur : La bonne réponse n'a pas été trouvée pour cette question. Impossible de valider.</p>`;
@@ -429,7 +468,7 @@ function submitQCM() {
         return;
     }
 
-    console.log("Réponse utilisateur QCM:", userAnswer, " | Réponse correcte attendue:", correctAnswer);
+    console.log("Réponse utilisateur QCM:", userAnswer, " | Réponse correcte attendue:", correctAnswer, `(vaut ${qcmPoints} points)`);
 
 
     optionsContainer.querySelectorAll('input').forEach(input => input.disabled = true);
@@ -437,9 +476,9 @@ function submitQCM() {
 
     let feedback = '';
     if (userAnswer === correctAnswer) {
-        feedback = `<p class="correct">✅ **Bonne réponse !** Vous gagnez 1 point.</p>`;
-        userScore += 1;
-        console.log("Bonne réponse QCM.");
+        feedback = `<p class="correct">✅ **Bonne réponse !** Vous gagnez ${qcmPoints} points.</p>`;
+        userScore += qcmPoints; // Ajoute les points variables
+        console.log(`Bonne réponse QCM. Score actuel: ${userScore}`);
     } else {
         feedback = `<p class="incorrect">❌ **Mauvaise réponse.**</p>`;
         console.log("Mauvaise réponse QCM.");
@@ -456,7 +495,7 @@ function submitQCM() {
 
 
 async function submitParagrapheIA() {
-    console.log("submitParagrapheIA() déclenché."); // Log pour confirmer que le bouton a été cliqué
+    console.log("submitParagrapheIA() déclenché."); 
     const questionData = currentQuizData[currentQuestionIndex];
     const userAnswer = document.getElementById('ia-answer').value.trim();
     const resultDiv = document.getElementById('correction-feedback');
