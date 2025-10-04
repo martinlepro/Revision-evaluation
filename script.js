@@ -1,4 +1,4 @@
-// script.js (Version avec formatage Markdown, audio OpenAI TTS, et structure dictée/compréhension)
+// script.js (Version corrigée des chemins de fichiers)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
@@ -9,7 +9,7 @@ const originalConsoleError = console.error;
 function appendToDebug(message, type = 'log') {
     if (debugElement) {
         const p = document.createElement('p');
-        p.style.whiteSpace = 'pre-wrap'; 
+        p.style.whiteSpace = 'pre-wrap'; // Pour conserver les retours à la ligne dans le JSON
         p.textContent = `[${type.toUpperCase()}] ${new Date().toLocaleTimeString()} : ${message}`;
         if (type === 'error') {
             p.style.color = 'red';
@@ -65,14 +65,14 @@ let isQuizRunning = false;
 const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
-const AUDIO_GENERATION_API_URL = `${BASE_API_URL}/generate-audio`; // Nouvelle URL pour l'audio
+const AUDIO_GENERATION_API_URL = `${BASE_API_URL}/generate-audio`; 
 
-// Pour la relecture audio
 let currentAudioPlayer = null;
 let listenCount = 0;
-let maxListens = 3; // Par défaut, 3 écoutes max, peut être ajusté par l'IA ou la difficulté
+let maxListens = 3; 
 
-// --- NOUVELLE STRUCTURE DES MATIÈRES ---
+// --- STRUCTURE DES MATIÈRES ---
+// Basée sur les chemins de fichiers que tu as fournis.
 const STRUCTURE = {
     "Anglais": {
         "Culture": [ 
@@ -130,7 +130,7 @@ const STRUCTURE = {
         ]
     }
 };
-// --- FIN NOUVELLE STRUCTURE ---
+// --- FIN STRUCTURE DES MATIÈRES ---
 
 document.addEventListener('DOMContentLoaded', () => {
     displayMenu();
@@ -149,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn("Bouton 'start-paragraphe-btn' non trouvé. Assurez-vous qu'il existe dans votre HTML.");
     }
 
-    // NOUVEAU : Bouton pour la dictée
     const startDictationBtn = document.getElementById('start-dictation-btn');
     if (startDictationBtn) {
         startDictationBtn.addEventListener('click', () => startQuiz('audio_dictation'));
@@ -173,7 +172,15 @@ function displayMenu() {
             chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; 
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
-                const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                let path;
+                // --- CORRECTION CLÉ ICI : LOGIQUE CONDITIONNELLE POUR LE CHEMIN DU FICHIER ---
+                // Si la matière est "Mathematiques", le chapitre est un VRAI sous-dossier.
+                // Sinon, le "chapitreName" est purement pour l'affichage dans le menu, le fichier est directement sous le dossier de la matière.
+                if (matiereName === "Mathematiques") {
+                    path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                } else {
+                    path = `${MATIERES_BASE_PATH}/${matiereName}/${lecon.file}`;
+                }
                 
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" data-path="${path}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
@@ -329,23 +336,22 @@ function formatMarkdownBold(text) {
 // --- Nouvelle fonction pour générer et jouer l'audio ---
 async function generateAndPlayAudioFromBackend(textToSpeak, audioPlayerElement, playButtonElement, listenCountElement) {
     playButtonElement.disabled = true;
-    listenCount = 0; // Réinitialise le compteur pour chaque nouvelle question audio
-    currentAudioPlayer = null; // Réinitialise le lecteur
+    listenCount = 0; 
+    currentAudioPlayer = null; 
 
-    if (textToSpeak.length > 4096) { // Limite d'OpenAI TTS pour l'input text
+    if (textToSpeak.length > 4096) { 
         alert("Le texte est trop long pour être converti en audio. Max 4096 caractères.");
         playButtonElement.disabled = false;
         return;
     }
 
     try {
-        // Indiquer à l'utilisateur que la génération audio est en cours
         listenCountElement.innerHTML = "Génération audio... 🎧";
         
         const response = await fetch(AUDIO_GENERATION_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: textToSpeak, language: 'fr' }) // On peut ajouter voice et model ici
+            body: JSON.stringify({ text: textToSpeak, language: 'fr' }) 
         });
 
         if (!response.ok) {
@@ -361,19 +367,19 @@ async function generateAndPlayAudioFromBackend(textToSpeak, audioPlayerElement, 
             playButtonElement.disabled = false;
             listenCountElement.textContent = `Écoutes restantes: ${maxListens - listenCount}`;
             if (listenCount >= maxListens) {
-                playButtonElement.disabled = true; // Désactive après la dernière écoute
+                playButtonElement.disabled = true; 
             }
         };
         
         currentAudioPlayer.play();
         listenCount++;
         listenCountElement.textContent = `Écoutes restantes: ${maxListens - listenCount}`;
-        playButtonElement.disabled = (listenCount >= maxListens); // Désactive si max atteint
+        playButtonElement.disabled = (listenCount >= maxListens); 
 
     } catch (error) {
         console.error("Erreur lors de la génération ou lecture audio:", error);
         listenCountElement.innerHTML = `Erreur audio: ${error.message}`;
-        playButtonElement.disabled = false; // Réactive en cas d'erreur pour réessayer
+        playButtonElement.disabled = false; 
     }
 }
 
@@ -396,10 +402,8 @@ async function callGenerationAPI(topicContent, type, count) {
         instruction = `${strictnessInstruction} Génère ${count} sujets de rédaction de paragraphe. 
         Pour chaque sujet, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
     } else if (type === 'audio_dictation') {
-        // NOUVEAU : Demande à l'IA de générer un texte pour la dictée
         instruction = `${strictnessInstruction} Génère ${count} textes courts et clairs pour une dictée, basés sur le contenu de leçon fourni. Chaque texte doit être une phrase ou deux, adapté à un élève de 3ème. Chaque objet doit avoir une clé 'text' pour le texte de la dictée et une clé 'points' pour la difficulté (entre 1 et 3). **Ne pose pas de questions, fournis juste le texte.**`;
     } 
-    // Tu pourrais ajouter 'audio_comprehension' ici avec une instruction similaire pour un texte plus long + des questions.
     else {
         throw new Error("Type de génération de questions inconnu.");
     }
@@ -457,7 +461,7 @@ function displayCurrentQuestion() {
         renderQCM(questionData, container);
     } else if (questionData.type === 'paragraphe_ia') {
         renderParagraphe(questionData, container);
-    } else if (questionData.type === 'audio_dictation') { // NOUVEAU
+    } else if (questionData.type === 'audio_dictation') { 
         renderAudioDictation(questionData, container);
     } 
     else {
@@ -511,7 +515,6 @@ function renderParagraphe(questionData, container) {
     container.innerHTML += html;
 }
 
-// NOUVEAU : Render pour la dictée audio
 function renderAudioDictation(questionData, container) {
     const dictationPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1;
     totalQuizPoints += dictationPoints;
@@ -529,19 +532,21 @@ function renderAudioDictation(questionData, container) {
     `;
     container.innerHTML += html;
 
-    // Récupérer les éléments après qu'ils ont été ajoutés au DOM
     const playButton = document.getElementById('play-audio-btn');
     const listenCountDisplay = document.getElementById('listen-count-display');
 
     // Générer et jouer l'audio la première fois
+    // Désactive le bouton d'écoute pour éviter les clics avant que l'audio ne soit prêt
+    playButton.disabled = true; 
     generateAndPlayAudioFromBackend(
         questionData.text, 
-        currentAudioPlayer, // Pas besoin d'un élément audio spécifique, la fonction le crée
+        currentAudioPlayer, 
         playButton, 
         listenCountDisplay
     );
 
-    // Attacher l'écouteur d'événement pour les écoutes suivantes
+    // L'écouteur d'événement est attaché après l'appel à generateAndPlayAudioFromBackend
+    // car le bouton est réactivé à la fin de cette fonction si tout va bien.
     playButton.addEventListener('click', () => {
         if (currentAudioPlayer && listenCount < maxListens) {
             currentAudioPlayer.play();
@@ -652,7 +657,6 @@ async function submitParagrapheIA() {
     }
 }
 
-// NOUVEAU : Soumission pour la dictée
 function submitDictation() {
     console.log("submitDictation() déclenché.");
     const questionData = currentQuizData[currentQuestionIndex];
@@ -660,20 +664,17 @@ function submitDictation() {
     const resultDiv = document.getElementById('correction-feedback');
     const dictationPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1;
 
-    // Arrêter l'audio si elle joue encore
     if (currentAudioPlayer) {
         currentAudioPlayer.pause();
         currentAudioPlayer.currentTime = 0;
     }
-    // Désactiver la zone de texte et le bouton de relecture
     document.getElementById('dictation-answer').disabled = true;
     document.getElementById('play-audio-btn').disabled = true;
 
     const originalText = questionData.text;
 
-    // Simple correction: comparaison exacte (ignorer casse et ponctuation de base pour la tolérance)
-    const normalizedUserAnswer = userAnswer.toLowerCase().replace(/[.,!?;:]/g, '');
-    const normalizedOriginalText = originalText.toLowerCase().replace(/[.,!?;:]/g, '');
+    const normalizedUserAnswer = userAnswer.toLowerCase().replace(/[.,!?;:']/g, '').replace(/\s+/g, ' ').trim(); // Plus de nettoyage
+    const normalizedOriginalText = originalText.toLowerCase().replace(/[.,!?;:']/g, '').replace(/\s+/g, ' ').trim();
 
     let score = 0;
     let feedback = '';
@@ -682,11 +683,9 @@ function submitDictation() {
         score = dictationPoints;
         feedback = `<p class="correct">✅ **Excellent !** Votre transcription est parfaite. Vous gagnez ${score} points.</p>`;
     } else {
-        // Une correction plus avancée pourrait impliquer l'IA ou un algorithme de distance de Levenshtein
         feedback = `<p class="incorrect">❌ **Votre transcription contient des erreurs.**</p>`;
         feedback += `<p>Texte attendu : "**${originalText}**"</p>`;
         feedback += `<p>Votre réponse : "${userAnswer}"</p>`;
-        // Ici tu pourrais ajouter une logique pour des points partiels si tu le souhaites
     }
     
     userScore += score;
