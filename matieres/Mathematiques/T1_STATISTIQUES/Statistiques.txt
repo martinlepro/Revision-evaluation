@@ -1,0 +1,82 @@
+I. Statistiques
+​1) Fréquence
+​Définition :
+Lors d'une enquête, une liste de données est relevée.
+L'effectif total est le nombre total de données dans la liste.
+L'effectif d'une donnée est le nombre total de fois où cette donnée apparaît dans la liste.
+La fréquence d'une donnée est le quotient de son effectif par l'effectif total.
+(On l'exprime souvent sous forme de pourcentage).
+\text{Fréquence} = \frac{\text{effectif}}{\text{effectif total}}
+Exemple :
+
+Nombre de frères et sœurs 1 2 3 4 0 Total
+Effectif 47 76 63 37 37 260
+Fréquence 0,1723 0,304 0,252 0,124 0,147 1
+Fréquence (%) 17,2 30,4 25,2 13,8 14,2 100
+
+II. Moyenne pondérée
+​Définition :
+La moyenne d'une série de valeurs, pondérée par des effectifs (ou coefficients), est le nombre obtenu :
+​en additionnant les produits de chaque valeur (ou coefficient) ;
+​puis en divisant cette somme par l'effectif total de la série (ou la somme des coefficients).
+​Exemple :
+Audrey a observé les notes suivantes en mathématiques :
+D.S. (coef 3) : 12
+L.E. (coef 2) : 11 ; 8 et 17
+D.M. (coef 1) : 20
+​Quelle est sa moyenne ?
+
+\frac{3 \times 12 + 2 \times (11 + 8 + 17) + 1 \times 20}{3 + 2 \times 3 + 1} = 12,4 \frac{3 \times 12 + 2 \times 11 + 2 \times 8 + 2 \times 17 + 1 \times 20}{3 + 2 + 2 + 2 + 1} = 12,4
+
+Elle a une moyenne de 12,4.
+​(Calcul sur un autre exemple, probablement l'exemple 1 des frères et sœurs :)
+\frac{47 \times 1 + 76 \times 2 + 63 \times 3 + 37 \times 4 + 37 \times 0}{260}
+\frac{47 + 152 + 189 + 148 + 0}{260} = \frac{536}{260}
+\approx 2,0615 \approx 2,062
+​Le nombre moyen de frères et sœurs est 2,062.
+​III. Médiane d'une série statistique
+​1) Détermination de la médiane « simple »
+​Définition :
+Pour des valeurs d'une série statistique qui sont rangées par ordre croissant, la médiane M est un nombre tel que :
+​au moins la moitié des valeurs de la série sont inférieures ou égales à M ;
+​au moins la moitié des valeurs sont supérieures ou égales à M.
+​Exemple :
+​Effectif total impair :
+Il y a une seule valeur centrale \rightarrow c'est la médiane.
+​Déterminer la médiane de la série suivante :
+12 ; 15 ; 7 ; 10 ; 5 ; 4 ; 18
+​Effectif total N = 7.
+On range dans l'ordre croissant : \underset{\uparrow}{4} ; \underset{2}{5} ; \underset{3}{7} ; \underset{4}{10} ; \underset{5}{12} ; \underset{6}{15} ; \underset{7}{18}.
+La médiane est 10.
+​Effectif total pair :
+Il y a deux valeurs centrales \rightarrow La médiane est comprise entre ces deux valeurs. Généralement, on prend la moyenne de ces deux valeurs.
+​Déterminer la médiane de la série suivante :
+12 ; 25 ; 1 ; 42 ; 21 ; 16
+​On range dans l'ordre croissant :
+\underset{1}{1} ; \underset{2}{12} ; \underset{3}{16} ; \underset{4}{21} ; \underset{5}{25} ; \underset{6}{42}.
+​\frac{16 + 21}{2} = \frac{37}{2} = 18,5
+La médiane est \mathbf{18,5}.
+​2) Calcul avec les effectifs cumulés
+​Définition :
+L'effectif cumulé croissant d'une valeur est la somme de l'effectif de cette valeur plus les effectifs des valeurs qui lui sont inférieures.
+​Méthode :
+Pour déterminer la médiane d'une série statistique représentée par un tableau d'effectifs, on peut créer une ligne d'effectifs cumulés croissants (ECC).
+​Exemple :
+| Note | 0 | 1 | 2 | 3 | 4 | 5 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Effectif | 15 | 23 | 19 | 38 | 77 | 91 |
+| ECC | 15 | 38 | 57 | 95 | 172 | 263 |
+​L'effectif total est 263.
+\frac{263}{2} = 131,5
+La médiane est la valeur pour laquelle l'ECC dépasse 131,5 pour la première fois.
+L'ECC passe de 95 à 172 à la valeur 4.
+La médiane est 4.
+​IV. Étendue
+​Définition :
+L'étendue d'une série statistique est la différence entre la plus grande valeur et sa plus petite valeur.
+​Exemple :
+On considère la série suivante :
+12 ; 7 ; 10 ; 5 ; 4 ; 18
+​Quelle est l'étendue ?
+18 - 4 = 14
+L'étendue est 14.
