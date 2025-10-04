@@ -1,0 +1,16 @@
+Triangles et proportionnalité.
+​1) Théorème de Thalès
+​Théorème :
+Si les points \text{A}, \text{M}, \text{B} et les points \text{A}, \text{N}, \text{C} sont alignés et que \text{BC} et \text{MN} sont parallèles, alors :
+\frac{\text{AM}}{\text{AB}} = \frac{\text{AN}}{\text{AC}} = \frac{\text{MN}}{\text{BC}}
+​Exemple de configuration emboîtée
+​Les points \text{A}, \text{M}, \text{B} et le point \text{A}, \text{N}, \text{C} sont alignés.
+\text{MN} // \text{BC}$$Donc d'après le **Théorème de Thalès** :$$\frac{\text{AM}}{\text{AB}} = \frac{\text{AN}}{\text{AC}} = \frac{\text{MN}}{\text{BC}}
+​Application numérique (Les calculs sont conservés tels qu'écrits, sans les parenthèses) :
+7,5 : 1,2 = 6,25
+4,5 : 1,2 = 3,75
+​Exemple configuration du papillon
+​Les points \text{I}, \text{A}, \text{R} et les points \text{M}, \text{A}, \text{D} sont alignés.
+\text{IM} // \text{RD}$$Donc d'après le **Théorème de Thalès** :$$\frac{\text{AM}}{\text{AD}} = \frac{\text{AI}}{\text{AR}} = \frac{\text{IM}}{\text{RD}}
+​Application numérique :
+\text{AM} = 9$$$$\text{AD} = 6$$$$\frac{9}{6} = 1,5$$$$\text{AR} \times 1,5 = 6$$$$\text{AR} = 6 \div 1,5 = 4
