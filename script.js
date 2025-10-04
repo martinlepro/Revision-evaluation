@@ -1,4 +1,5 @@
-// script.js
+// script.js (Modifié pour la note /20, la structure et la correction de bug)
+
 window.onerror = function(msg, url, line, col, error) {
     document.getElementById('debug').textContent =
       "Erreur JS : " + msg + "\nLigne: " + line + "\n" + (error ? error.stack : "");
@@ -9,21 +10,23 @@ const MATIERES_BASE_PATH = 'matieres';
 let selectedItems = []; // Stocke les objets de leçon sélectionnés { path, type, name }
 let currentQuizData = []; // Données des questions générées par l'IA
 let currentQuestionIndex = 0;
+let correctAnswersCount = 0; // Nombre de bonnes réponses
+let totalQuizPoints = 0; // Le score total du quiz (doit être 20)
+let userScore = 0; // Score de l'utilisateur
+let isQuizRunning = false; // NOUVEAU : Drapeau pour prévenir le spam de "Commencer le quiz"
 
-// URL de votre serveur proxy sécurisé sur Render (avec les NOUVELLES routes)
+// URL de votre serveur proxy sécurisé sur Render
 const BASE_API_URL = 'https://cle-api.onrender.com';
-const CORRECTION_API_URL = `${BASE_API_URL}/correction`; // Route de correction
-const GENERATION_API_URL = `${BASE_API_URL}/generation`; // Route de génération à partir du prompt complet
+const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
+const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
-// --- Gestion de la structure des matières ---
-// Chaque leçon est un OBJET qui pointe vers le fichier .txt et spécifie le type de quiz à générer.
+// --- Gestion de la structure des matières (Mise à jour) ---
 const STRUCTURE = {
     "Mathematiques": {
         "Nombres_Premiers": [
             { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" }
         ],
         "T1_STATISTIQUES": [
-             // Assurez-vous d'avoir ce fichier dans matieres/Mathematiques/T1_STATISTIQUES/
             { name: "Statistiques (QCM)", file: "lecon_statistiques.txt", type: "qcm" } 
         ],
         "Les_Aires": [
@@ -32,7 +35,6 @@ const STRUCTURE = {
     },
     "Histoire_Geo": {
         "La_Revolution_Francaise": [
-            // Assurez-vous d'avoir ce fichier dans matieres/Histoire_Geo/La_Revolution_Francaise/
             { name: "Révolution Française", file: "lecon_revolution.txt", type: "paragraphe" }
         ],
         "Les_Fleuves_du_Monde": [
@@ -40,8 +42,7 @@ const STRUCTURE = {
         ]
     },
     "Allemand": {
-        // --- Chapitres ajoutés ---
-        "<préfixe verbe>": [
+        "<prefixe verbe>": [
             { name: "Les Verbes à Préfixe", file: "lecon_prefixe_verbe.txt", type: "qcm" }
         ],
         "<facile,tenter,important>": [
@@ -50,21 +51,24 @@ const STRUCTURE = {
         "Grammaire_Base": [
             { name: "Grammaire de Base", file: "lecon_grammaire_base.txt", type: "qcm" }
         ]
-        // --- Fin des ajouts ---
+    },
+    "Art_Plastique": { // NOUVELLE MATIÈRE
+        "<description>": [
+            { name: "Analyse d'Œuvre", file: "lecon_description_oeuvre.txt", type: "paragraphe" }
+        ]
     }
 };
 
 // --- Initialisation et chargement des ressources ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Lancement de l'affichage de la structure des matières
     loadStructure();
-
-    // 2. Événement du bouton de démarrage du quiz
-    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz);
+    // Le bouton utilise maintenant le drapeau isQuizRunning
+    document.getElementById('start-quiz-btn').addEventListener('click', startQuiz); 
 });
 
-// --- Fonctions de chargement et sélection ---
+
+// --- Fonctions de chargement et sélection (inchangées) ---
 
 function loadStructure() {
     const menuContainer = document.getElementById('menu-container');
@@ -73,7 +77,7 @@ function loadStructure() {
     for (const matiere in STRUCTURE) {
         const matiereDiv = document.createElement('div');
         matiereDiv.className = 'matiere';
-        matiereDiv.innerHTML = `<h2>${matiere}</h2>`;
+        matiereDiv.innerHTML = `<h2>${matiere.replace(/_/g, ' ')}</h2>`;
         
         const ul = document.createElement('ul');
 
@@ -82,15 +86,15 @@ function loadStructure() {
             chapitreLi.innerHTML = `<h3>${chapitre.replace(/_/g, ' ')}</h3>`;
             const itemsList = document.createElement('ul');
 
-            STRUCTURE[matiere][chapitre].forEach(itemObject => { // itemObject = {name, file, type}
+            STRUCTURE[matiere][chapitre].forEach(itemObject => { 
                 const itemLi = document.createElement('li');
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 
-                // Chemin complet du fichier de leçon (.txt)
-                const fullPath = `${MATIERES_BASE_PATH}/${matiere}/${chapitre}/${itemObject.file}`;
+                // Remplacement du préfixe <exemple> pour un affichage plus propre
+                const chapterPath = `${matiere}/${chapitre.replace(/[<>]/g, '')}`;
+                const fullPath = `${MATIERES_BASE_PATH}/${chapterPath}/${itemObject.file}`;
                 
-                // On stocke l'objet complet de la leçon dans l'attribut data-item
                 checkbox.dataset.item = JSON.stringify({ 
                     path: fullPath,
                     type: itemObject.type,
@@ -102,7 +106,6 @@ function loadStructure() {
 
                 const label = document.createElement('label');
                 label.htmlFor = fullPath;
-                // Affichage : Nom de la leçon (Type de quiz)
                 label.textContent = `${itemObject.name} (${itemObject.type.toUpperCase()})`; 
 
                 itemLi.appendChild(checkbox);
@@ -119,22 +122,19 @@ function loadStructure() {
 }
 
 function updateSelection(event) {
-    // Récupérer l'objet complet stocké dans l'attribut data-item
     const itemObject = JSON.parse(event.target.dataset.item);
 
     if (event.target.checked) {
         selectedItems.push(itemObject);
     } else {
-        // Retirer l'élément de la sélection en comparant les chemins
         selectedItems = selectedItems.filter(item => item.path !== itemObject.path);
     }
     
-    // Affichage des éléments sélectionnés
     const selectionDisplay = document.getElementById('selected-items');
     selectionDisplay.textContent = selectedItems.map(item => item.name).join(' | ');
 }
 
-// --- Logique principale du Quiz (Révisée pour la génération à la volée) ---
+// --- Logique principale du Quiz (Mise à jour pour le bug de démarrage) ---
 
 async function startQuiz() {
     if (selectedItems.length === 0) {
@@ -142,42 +142,43 @@ async function startQuiz() {
         return;
     }
     
+    // NOUVEAU : Empêcher le double-clic
+    if (isQuizRunning) {
+        console.log("Quiz déjà en cours de génération/exécution.");
+        return;
+    }
+    isQuizRunning = true; 
+    
+    // Initialisation des variables de score
+    correctAnswersCount = 0;
+    totalQuizPoints = 0;
+    userScore = 0;
+
     document.getElementById('selection-view').style.display = 'none';
     document.getElementById('quiz-view').style.display = 'block';
 
-    currentQuizData = []; // Réinitialise les données pour les nouveaux quiz
+    currentQuizData = []; 
     
-    // 1. Pour chaque leçon sélectionnée, générer le contenu via l'IA
     for (const lesson of selectedItems) {
         try {
-            // Affichage de chargement
-            document.getElementById('question-container').innerHTML = `
-                <h2>🧠 Génération du contenu pour **${lesson.name}** (${lesson.type.toUpperCase()}) en cours...</h2>
-                <p>Ceci peut prendre quelques secondes.</p>`;
+            document.getElementById('question-container').innerHTML = `<h2>🧠 Génération du contenu pour **${lesson.name}** (${lesson.type.toUpperCase()}) en cours...</h2>`;
             
-            // 2. Récupérer le contenu brut de la leçon (.txt) depuis GitHub Pages
             const lessonResponse = await fetch(lesson.path);
             if (!lessonResponse.ok) {
-                throw new Error(`Le fichier de leçon ${lesson.path} n'a pas été trouvé (Status: ${lessonResponse.status}). Assurez-vous qu'il existe !`);
+                throw new Error(`Le fichier de leçon ${lesson.path} n'a pas été trouvé (Status: ${lessonResponse.status}).`);
             }
             const lessonText = await lessonResponse.text();
             
-            // 3. Construire le prompt complet pour l'IA
             const fullPrompt = createGenerationPrompt(lesson.type, lessonText);
-            
-            // 4. Appeler le serveur Render pour la génération
             const generatedContentJSON = await callGenerationAPI(fullPrompt);
 
-            // 5. Mettre le contenu généré à jour
             if (lesson.type === 'qcm') {
-                 // Si c'est un QCM, l'objet retourné contient un tableau 'questions'
                 if (generatedContentJSON.questions && Array.isArray(generatedContentJSON.questions)) {
                     currentQuizData.push(...generatedContentJSON.questions);
                 } else {
                     console.warn("L'IA a généré un JSON QCM mais le champ 'questions' est manquant ou non valide.", generatedContentJSON);
                 }
             } else if (lesson.type === 'paragraphe') {
-                // Si c'est un paragraphe, on ajoute l'objet unique
                 currentQuizData.push(generatedContentJSON);
             }
 
@@ -188,38 +189,44 @@ async function startQuiz() {
                 <p>Impossible de générer le contenu pour **${lesson.name}**.</p>
                 <p class="error">Détails: ${error.message}</p>
                 <button onclick="window.location.reload()">Retour au menu</button>`;
+            isQuizRunning = false; // Libérer le drapeau en cas d'échec
             return; 
         }
     }
     
-    // 6. Démarrer l'affichage du quiz
     if (currentQuizData.length === 0) {
          document.getElementById('question-container').innerHTML = `
-            <h2>❌ Aucune question n'a pu être générée. Vérifiez le format du JSON retourné par l'IA.</h2>
+            <h2>❌ Aucune question n'a pu être générée.</h2>
             <button onclick="window.location.reload()">Retour au menu</button>`;
+        isQuizRunning = false;
         return;
     }
+
+    // Calcul du score total des QCM générés (doit être 20)
+    totalQuizPoints = currentQuizData
+        .filter(item => item.type === 'qcm')
+        .reduce((sum, item) => sum + (item.points || 0), 0);
     
-    // Mélange et affichage
     currentQuizData.sort(() => Math.random() - 0.5);
     currentQuestionIndex = 0;
     displayCurrentQuestion();
+    isQuizRunning = false; // Le quiz est lancé, le drapeau peut être désactivé ici (ou au rechargement)
 }
 
 
-// --- Fonctions d'aide pour l'IA ---
+// --- Fonctions d'aide pour l'IA (Mise à jour du QCM prompt) ---
 
 function createGenerationPrompt(type, lessonText) {
-    // Cette fonction construit le prompt SYSTEM pour dire à l'IA CE QU'ON ATTEND (JSON)
-    // et lui fournit les données (la Leçon).
-
     if (type === 'qcm') {
-        return `Vous êtes un générateur de quiz pour des élèves de 3ème. Générez 3 questions à choix multiples (QCM) basées UNIQUEMENT sur la leçon fournie ci-dessous.
+        // NOUVEAU : Instruction pour la pondération sur 20 points
+        return `Vous êtes un générateur de quiz pour des élèves de 3ème. Générez entre 5 et 10 questions à choix multiples (QCM) basées UNIQUEMENT sur la leçon fournie ci-dessous.
+        
+        Chaque question doit inclure un champ 'points' (ex: 2, 3 ou 4) représentant sa difficulté. Le TOTAL des points de toutes les questions doit être EXCLUSIVEMENT 20.
         
         Le format de retour doit être STRICTEMENT un objet JSON. 
         Le format JSON attendu est : 
         { "questions": [
-            {"type": "qcm", "question": "...", "options": ["...", "...", "..."], "reponse_correcte": "...", "explication": "..." },
+            {"type": "qcm", "question": "...", "options": ["...", "...", "..."], "reponse_correcte": "...", "explication": "...", "points": X },
             ...
         ]}
         
@@ -229,11 +236,16 @@ function createGenerationPrompt(type, lessonText) {
         ---
         `;
     } else if (type === 'paragraphe') {
+        // Remplacement du préfixe <exemple> par le sujet pour le prompt
+        const sujetCleaned = selectedItems
+            .filter(item => item.path.includes(lessonText.substring(0, 50)))
+            .map(item => item.name)[0] || "Paragraphe Argumenté";
+
         return `Vous êtes un concepteur de sujets d'examen pour des élèves de 3ème. Générez UN sujet de paragraphe argumenté basé UNIQUEMENT sur la leçon fournie ci-dessous.
         
         Le format de retour doit être STRICTEMENT un objet JSON.
         Le format JSON attendu est : 
-        { "type": "paragraphe_ia", "sujet": "...", "attendus": ["...", "...", "..."], "consigne_ia": "Corrigez le texte de l'élève en 3e. Notez-le sur 10, en prenant en compte la clarté des arguments, la pertinence des exemples donnés et la structure de l'exposé." }
+        { "type": "paragraphe_ia", "sujet": "${sujetCleaned}", "attendus": ["...", "...", "..."], "consigne_ia": "Corrigez le texte de l'élève en 3e. Notez-le sur 10, en prenant en compte la clarté des arguments, la pertinence des exemples donnés et la structure de l'exposé." }
         
         LEÇON FOURNIE :
         ---
@@ -244,16 +256,12 @@ function createGenerationPrompt(type, lessonText) {
     return "Erreur: Type de contenu inconnu.";
 }
 
-// Fonction qui appelle la route /generation du serveur Render
 async function callGenerationAPI(fullPrompt) {
+    // ... (Fonction inchangée) ...
     const response = await fetch(GENERATION_API_URL, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            full_prompt: fullPrompt // Le prompt complet incluant la leçon
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_prompt: fullPrompt }),
     });
     
     if (!response.ok) {
@@ -261,15 +269,14 @@ async function callGenerationAPI(fullPrompt) {
         throw new Error(`Erreur API Render lors de la Génération: ${errorData.error || response.statusText}`);
     }
     
-    const data = await response.json(); // Réponse du serveur: { generated_content: "JSON_STRING" }
+    const data = await response.json();
     
     if (data.generated_content) {
-        // L'IA renvoie une CHAÎNE JSON. Il faut la parser pour obtenir l'objet.
         try {
             return JSON.parse(data.generated_content);
         } catch (e) {
             console.error("Erreur de parsing JSON de l'IA:", data.generated_content);
-            throw new Error("L'IA n'a pas renvoyé un format JSON valide (vérifiez votre prompt sur le serveur).");
+            throw new Error("L'IA n'a pas renvoyé un format JSON valide.");
         }
     } else {
         throw new Error("Réponse de génération incomplète: 'generated_content' manquant.");
@@ -277,13 +284,19 @@ async function callGenerationAPI(fullPrompt) {
 }
 
 
-// --- Fonctions de rendu (Inchagées pour le moment) ---
+// --- Fonctions de rendu (Mise à jour de l'affichage QCM) ---
 
 function displayCurrentQuestion() {
-    // ... (Code de displayCurrentQuestion non modifié)
     const questionData = currentQuizData[currentQuestionIndex];
     const container = document.getElementById('question-container');
-    container.innerHTML = `<h3>Question ${currentQuestionIndex + 1} / ${currentQuizData.length}</h3>`;
+    
+    // Affichage du score actuel (uniquement si c'est un QCM)
+    let scoreDisplay = '';
+    if (totalQuizPoints > 0) {
+        scoreDisplay = ` | Score: ${userScore} / ${totalQuizPoints} pts`;
+    }
+    
+    container.innerHTML = `<h3>Question ${currentQuestionIndex + 1} / ${currentQuizData.length}${scoreDisplay}</h3>`;
     document.getElementById('next-question-btn').style.display = 'none';
 
     if (questionData.type === 'qcm') {
@@ -294,8 +307,12 @@ function displayCurrentQuestion() {
 }
 
 function renderQCM(data) {
-    // ... (Code de renderQCM non modifié)
-    let html = `<div class="qcm-question"><h4>${data.question}</h4>`;
+    // Affiche la pondération de la question
+    const pointsDisplay = data.points ? `<p class="qcm-points">Cette question vaut **${data.points}** points.</p>` : '';
+    
+    let html = `<div class="qcm-question">
+        ${pointsDisplay}
+        <h4>${data.question}</h4>`;
     data.options.forEach((option, index) => {
         const id = `qcm-option-${index}`;
         html += `
@@ -307,19 +324,9 @@ function renderQCM(data) {
     return html;
 }
 
-function renderParagraphe(data) {
-    // ... (Code de renderParagraphe non modifié)
-    let html = `<div class="paragraphe-sujet"><h4>Sujet : ${data.sujet}</h4>`;
-    html += `<textarea id="ia-answer" rows="10" placeholder="Rédigez votre paragraphe argumenté ici..."></textarea>`;
-    html += `<button onclick="submitParagrapheIA()">Envoyer à l'IA pour correction</button></div>`;
-    return html;
-}
-
-
-// --- Fonctions de soumission et de correction (Inchagées) ---
+// --- Fonctions de soumission et de correction (Mise à jour du score QCM) ---
 
 function submitQCM() {
-    // ... (Code de submitQCM non modifié)
     const questionData = currentQuizData[currentQuestionIndex];
     const resultDiv = document.getElementById('correction-feedback');
     const selectedOption = document.querySelector('input[name="qcm-answer"]:checked');
@@ -331,75 +338,24 @@ function submitQCM() {
 
     const userAnswer = selectedOption.value;
     const isCorrect = userAnswer === questionData.reponse_correcte;
+    const points = questionData.points || 0;
 
     if (isCorrect) {
-        resultDiv.innerHTML = `<p class="correct">✅ Correct!</p><p>${questionData.explication}</p>`;
+        // NOUVEAU : Ajout des points au score utilisateur
+        userScore += points; 
+        
+        resultDiv.innerHTML = `<p class="correct">✅ Correct! Vous gagnez **${points} points**.</p><p>${questionData.explication}</p>`;
     } else {
-        resultDiv.innerHTML = `<p class="incorrect">❌ Faux.</p><p>La réponse correcte était: **${questionData.reponse_correcte}**.</p><p>Explication: ${questionData.explication}</p>`;
+        resultDiv.innerHTML = `<p class="incorrect">❌ Faux. Vous ne gagnez aucun point.</p><p>La réponse correcte était: **${questionData.reponse_correcte}**.</p><p>Explication: ${questionData.explication}</p>`;
     }
 
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
 
-async function submitParagrapheIA() {
-    // ... (Code de submitParagrapheIA non modifié)
-    const questionData = currentQuizData[currentQuestionIndex];
-    const userAnswer = document.getElementById('ia-answer').value.trim();
-    const resultDiv = document.getElementById('correction-feedback');
-
-    if (userAnswer.length < 50) {
-        alert("Veuillez écrire un paragraphe plus long (minimum 50 caractères).");
-        return;
-    }
-    
-    resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
-    
-    // Le prompt contient la consigne pour l'IA et la réponse de l'élève
-    const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
-    
-    try {
-        // *** APPEL AU PROXY RENDER SÉCURISÉ ***
-        const responseText = await callCorrectionAPI(prompt); 
-        
-        // La réponse textuelle inclut la note et les commentaires
-        resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div>`;
-        document.getElementById('next-question-btn').style.display = 'block';
-
-    } catch (error) {
-        console.error("Erreur lors de la correction:", error);
-        resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA. Vérifiez votre service Render. Détails: ${error.message}</p>`;
-    }
-}
-
-
-// Fonction d'appel à la route /correction
-async function callCorrectionAPI(prompt) {
-    const response = await fetch(CORRECTION_API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            prompt: prompt 
-        }),
-    });
-    
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
-        throw new Error(`Erreur API Render lors de la Correction: ${errorData.error || response.statusText}`);
-    }
-
-    const data = await response.json(); 
-    // Le serveur renvoie { correction_text: "..." }
-    return data.correction_text;
-}
-
-
-// --- Navigation ---
+// --- Navigation (Mise à jour pour le score final) ---
 
 function nextQuestion() {
-    // ... (Code de nextQuestion non modifié)
     const correctionFeedbackDiv = document.getElementById('correction-feedback');
     if (correctionFeedbackDiv) {
         correctionFeedbackDiv.innerHTML = '';
@@ -413,6 +369,63 @@ function nextQuestion() {
     if (currentQuestionIndex < currentQuizData.length) {
         displayCurrentQuestion();
     } else {
-        document.getElementById('question-container').innerHTML = '<h2>🎉 Quiz terminé ! Félicitations !</h2><button onclick="window.location.reload()">Recommencer</button>';
+        // FIN DU QUIZ : Affichage du score total
+        const finalNote = (userScore / totalQuizPoints) * 20; // Calcul de la note sur 20
+        const finalNoteRounded = finalNote.toFixed(2);
+        
+        let feedback = `<h2>🎉 Quiz terminé !</h2>`;
+        if (totalQuizPoints > 0) {
+            feedback += `<p>Votre performance globale est de **${userScore} / ${totalQuizPoints} points**.</p>`;
+            feedback += `<h3>Votre note sur 20 est : **${finalNoteRounded} / 20**</h3>`;
+        } else {
+             feedback += `<p>Aucune question QCM n'a été trouvée pour la notation.</p>`;
+        }
+
+        document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer</button>';
+        // Le drapeau est implicitement réinitialisé par le rechargement de la page.
     }
 }
+
+
+// --- Fonctions inchangées ---
+async function submitParagrapheIA() {
+    const questionData = currentQuizData[currentQuestionIndex];
+    const userAnswer = document.getElementById('ia-answer').value.trim();
+    const resultDiv = document.getElementById('correction-feedback');
+
+    if (userAnswer.length < 50) {
+        alert("Veuillez écrire un paragraphe plus long (minimum 50 caractères).");
+        return;
+    }
+    
+    resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
+    
+    const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
+    
+    try {
+        const responseText = await callCorrectionAPI(prompt); 
+        
+        resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div>`;
+        document.getElementById('next-question-btn').style.display = 'block';
+
+    } catch (error) {
+        console.error("Erreur lors de la correction:", error);
+        resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA. Détails: ${error.message}</p>`;
+    }
+}
+
+async function callCorrectionAPI(prompt) {
+    const response = await fetch(CORRECTION_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt }),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
+        throw new Error(`Erreur API Render lors de la Correction: ${errorData.error || response.statusText}`);
+    }
+
+    const data = await response.json(); 
+    return data.correction_text;
+            }
