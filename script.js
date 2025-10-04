@@ -1,10 +1,10 @@
-// script.js (Version corrigée: Renommer 'reponse_correcte' en 'bonne_reponse' pour les QCM)
+// script.js (Version mise à jour avec nouvelle structure, correction LaTeX et logs boutons)
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 const debugElement = document.getElementById('debug');
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
-const originalConsoleError = console.error; // Ajout pour capturer les erreurs via appendToDebug
+const originalConsoleError = console.error;
 
 function appendToDebug(message, type = 'log') {
     if (debugElement) {
@@ -15,7 +15,7 @@ function appendToDebug(message, type = 'log') {
             p.style.color = 'red';
         } else if (type === 'warn') {
             p.style.color = 'orange';
-        } else if (type === 'info') { // Pour le JSON de la question
+        } else if (type === 'info') {
             p.style.color = 'blue';
         }
         debugElement.appendChild(p);
@@ -54,7 +54,7 @@ window.onerror = function(msg, url, line, col, error) {
 
 console.log("script.js chargé."); 
 
-const MATIERES_BASE_PATH = 'matieres';
+const MATIERES_BASE_PATH = 'matieres'; // Conserve le chemin de base "matieres" pour tous les fichiers
 let selectedItems = []; 
 let currentQuizData = []; 
 let currentQuestionIndex = 0;
@@ -66,13 +66,27 @@ const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`; 
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
+// --- NOUVELLE STRUCTURE DES MATIÈRES ---
 const STRUCTURE = {
-    "Mathematiques": {
-        "G1-STATISTIQUES": [ 
-            { name: "Triangles et Proportionnalité", file: "Triangles et proportionnalité.txt" } 
+    "Anglais": {
+        "Culture": [ 
+            { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
+        ]
+    },
+    "Francais": {
+        "Analyse": [
+            { name: "Analyse d'un texte", file: "Analyse d'un texte .txt" } 
         ],
-        "T1_STATISTIQUES": [
-            { name: "Statistiques", file: "Statistiques.txt" } 
+        "Écriture": [ 
+            { name: "L'Autoportrait", file: "Autoportrait.txt" },
+            { name: "Qui est je", file: "Qui est je.txt" } 
+        ],
+        "Grammaire": [
+            { name: "L'accord du verbe et du sujet", file: "L'accord du verbe et du sujet .txt" },
+            { name: "Les classes grammaticales", file: "Les classes grammaticales.txt" }
+        ],
+        "Conjugaison": [
+            { name: "Les Temps Simples de l'Indicatif", file: "Les Temps Simples de l'Indicatif.txt" }
         ]
     },
     "Histoire_Geo": {
@@ -80,24 +94,24 @@ const STRUCTURE = {
             { name: "Les aires urbaines", file: "Les aires urbaines.txt" } 
         ]
     },
+    "Mathematiques": {
+        // Le nom du chapitre est "G1-Triangles et proportionnalité" selon ta demande
+        "G1-Triangles et proportionnalité": [ 
+            { name: "Triangles et proportionnalité", file: "Triangles et proportionnalité.txt" } 
+        ],
+        "T1_STATISTIQUES": [
+            { name: "Statistiques", file: "Statistiques.txt" } 
+        ]
+    },
     "Physique-Chimie": {
         "Chimie": [
             { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
         ]
     },
-    "SVT": {
-        "Biologie": [
-            { name: "Le Phénotype", file: "Phénotype.txt" } 
-        ]
-    },
-    "Francais": {
-        "Écriture": [
-            { name: "L'Autoportrait", file: "Autoportrait.txt" } 
-        ]
-    },
-    "Anglais": {
-        "Culture": [
-            { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
+    "Science-de-la-Vie-et-de-la-Terre": { // Nom de la matière complet pour correspondre au chemin
+        "Biologie": [ 
+            { name: "L'Hérédité (Génétique)", file: "L'Hérédité (Génétique).txt" },
+            { name: "Le programme génétique", file: "Le programme génétique.txt" }
         ]
     },
     "Musique": {
@@ -111,6 +125,7 @@ const STRUCTURE = {
         ]
     }
 };
+// --- FIN NOUVELLE STRUCTURE ---
 
 document.addEventListener('DOMContentLoaded', () => {
     displayMenu();
@@ -124,16 +139,18 @@ function displayMenu() {
     for (const matiereName in STRUCTURE) {
         const matiereDiv = document.createElement('div');
         matiereDiv.className = 'matiere';
-        matiereDiv.innerHTML = `<h2>${matiereName}</h2>`;
+        matiereDiv.innerHTML = `<h2>${matiereName.replace(/-/g, ' ')}</h2>`; // Affiche "Science de la Vie et de la Terre"
 
         for (const chapitreName in STRUCTURE[matiereName]) {
             const chapitreDiv = document.createElement('div');
             chapitreDiv.className = 'chapitre';
-            chapitreDiv.innerHTML = `<h3>${chapitreName}</h3>`;
+            chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; // Affiche "G1 Triangles et proportionnalité"
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
+                // Construction du data-path pour les cases à cocher
+                const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
                 const label = document.createElement('label');
-                label.innerHTML = `<input type="checkbox" data-path="${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
+                label.innerHTML = `<input type="checkbox" data-path="${path}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
                 label.querySelector('input').addEventListener('change', toggleSelection);
                 chapitreDiv.appendChild(label);
             });
@@ -266,17 +283,24 @@ async function fetchFileContent(path) {
 async function callGenerationAPI(topicContent, type, count) {
     let instruction = "";
     if (type === 'mixed') {
-        instruction = `Génère ${count} questions de quiz basées sur le contenu de leçon suivant. Mélange des questions à choix multiples (QCM) avec une seule bonne réponse et des sujets de rédaction de paragraphe. Pour les QCM, fournis la question, une liste de 3-4 options, la bonne réponse et une courte explication. Pour les sujets de paragraphe, fournis le sujet et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10.`;
+        instruction = `Génère ${count} questions de quiz basées sur le contenu de leçon suivant. 
+        Pour les questions, utilise un langage clair et direct. Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML** (par exemple, écris "AM divisé par AB" ou "AM/AB" au lieu de "\\frac{AM}{AB}").
+        Mélange des questions à choix multiples (QCM) avec une seule bonne réponse et des sujets de rédaction de paragraphe.
+        Pour les QCM, fournis la question (avec la clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication').
+        Pour les sujets de paragraphe, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
     } else if (type === 'qcm') {
-        instruction = `Génère ${count} questions à choix multiples (QCM) avec une seule bonne réponse basées sur le contenu de leçon suivant. Pour chaque QCM, fournis la question, une liste de 3-4 options, la bonne réponse et une courte explication.`;
+        instruction = `Génère ${count} questions à choix multiples (QCM) avec une seule bonne réponse basées sur le contenu de leçon suivant. 
+        Les formules mathématiques ou expressions scientifiques doivent être écrites en texte simple, **sans utiliser de notation LaTeX ou de symboles spéciaux non standard HTML** (par exemple, écris "AM divisé par AB" ou "AM/AB" au lieu de "\\frac{AM}{AB}").
+        Pour chaque QCM, fournis la question (avec la clé 'question'), une liste de 3-4 options (clé 'options', comme un tableau de chaînes), la bonne réponse (clé 'bonne_reponse', une chaîne qui correspond à l'une des options) et une courte explication (clé 'explication').`;
     } else if (type === 'paragraphe_ia') {
-        instruction = `Génère ${count} sujets de rédaction de paragraphe basés sur le contenu de leçon suivant. Pour chaque sujet, fournis le sujet et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10.`;
+        instruction = `Génère ${count} sujets de rédaction de paragraphe basés sur le contenu de leçon suivant. 
+        Pour chaque sujet, fournis le sujet (clé 'sujet') et une consigne détaillée pour un professeur qui corrigera la réponse, en lui demandant de noter sur 10 (clé 'consigne_ia').`;
     } else {
         throw new Error("Type de génération de questions inconnu.");
     }
 
     const full_prompt = `${instruction} Le résultat doit être un tableau JSON nommé "questions", où chaque objet représente une question, et inclut un champ "type" ("qcm" ou "paragraphe_ia"). Contenu de la leçon: """${topicContent}"""`;
-    console.log("Envoi du prompt à l'API de génération:", full_prompt.substring(0, 200) + "..."); 
+    console.log("Envoi du prompt à l'API de génération (début):", full_prompt.substring(0, 500) + "..."); 
 
     const response = await fetch(GENERATION_API_URL, {
         method: 'POST',
@@ -292,7 +316,7 @@ async function callGenerationAPI(topicContent, type, count) {
 }
 
 async function callCorrectionAPI(prompt) {
-    console.log("Envoi du prompt à l'API de correction:", prompt.substring(0, 200) + "..."); 
+    console.log("Envoi du prompt à l'API de correction (début):", prompt.substring(0, 500) + "..."); 
     const response = await fetch(CORRECTION_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -338,7 +362,7 @@ function displayCurrentQuestion() {
 
 function renderQCM(questionData, container) {
     totalQuizPoints += 1; 
-    console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue (dans les données):", questionData.bonne_reponse); // CHANGEMENT DE NOM ICI
+    console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue (dans les données):", questionData.bonne_reponse); 
 
     let html = `
         <div class="qcm-question">
@@ -382,6 +406,7 @@ function renderParagraphe(questionData, container) {
 // --- Soumission et Correction ---
 
 function submitQCM() {
+    console.log("submitQCM() déclenché."); // Log pour confirmer que le bouton a été cliqué
     const questionData = currentQuizData[currentQuestionIndex];
     const optionsContainer = document.getElementById('options-container');
     const resultDiv = document.getElementById('correction-feedback');
@@ -394,7 +419,16 @@ function submitQCM() {
     }
 
     const userAnswer = selectedOption.value;
-    const correctAnswer = questionData.bonne_reponse; // <<< LE CHANGEMENT CRUCIAL EST ICI !!!
+    const correctAnswer = questionData.bonne_reponse; 
+    
+    // Ajout d'une vérification pour s'assurer que correctAnswer est bien défini
+    if (typeof correctAnswer === 'undefined' || correctAnswer === null) {
+        appendToDebug(`Erreur: La bonne réponse ('bonne_reponse') est undefined ou null pour cette question QCM. Question ID: ${questionData.id || 'N/A'}`, 'error');
+        resultDiv.innerHTML = `<p class="error">❌ Erreur : La bonne réponse n'a pas été trouvée pour cette question. Impossible de valider.</p>`;
+        document.getElementById('next-question-btn').style.display = 'block';
+        return;
+    }
+
     console.log("Réponse utilisateur QCM:", userAnswer, " | Réponse correcte attendue:", correctAnswer);
 
 
@@ -411,7 +445,6 @@ function submitQCM() {
         console.log("Mauvaise réponse QCM.");
     }
     
-    // Afficher l'explication et la bonne réponse (maintenant elle ne sera plus undefined)
     feedback += `<p>La bonne réponse était : **${correctAnswer}**.</p>`; 
     if (questionData.explication) {
         feedback += `<p>Explication : ${questionData.explication}</p>`;
@@ -423,6 +456,7 @@ function submitQCM() {
 
 
 async function submitParagrapheIA() {
+    console.log("submitParagrapheIA() déclenché."); // Log pour confirmer que le bouton a été cliqué
     const questionData = currentQuizData[currentQuestionIndex];
     const userAnswer = document.getElementById('ia-answer').value.trim();
     const resultDiv = document.getElementById('correction-feedback');
