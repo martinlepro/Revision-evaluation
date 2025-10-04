@@ -15,7 +15,7 @@ function appendToDebug(message, type = 'log') {
             p.style.color = 'red';
         } else if (type === 'warn') {
             p.style.color = 'orange';
-        } else if (type === 'info') { // Pour le JSON de la question et autres infos importantes
+        } else if (type === 'info') {
             p.style.color = 'blue';
         }
         debugElement.appendChild(p);
@@ -68,10 +68,10 @@ const GENERATION_API_URL = `${BASE_API_URL}/generation`;
 
 // --- NOUVELLE STRUCTURE DES MATIÈRES ---
 // Basée sur les chemins de fichiers que tu as fournis.
-// Seules les matières Mathématiques ont le chapitre comme sous-dossier réel.
+// Tous les "chapitres" sont traités comme des sous-dossiers réels.
 const STRUCTURE = {
     "Anglais": {
-        "Culture": [ // "Culture" est une catégorie d'affichage, pas un sous-dossier dans le chemin du fichier
+        "Culture": [ 
             { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
         ]
     },
@@ -92,36 +92,36 @@ const STRUCTURE = {
         ]
     },
     "Histoire_Geo": {
-        "Geographie": [ // Catégorie d'affichage
+        "Geographie": [ 
             { name: "Les aires urbaines", file: "Les aires urbaines.txt" } 
         ]
     },
     "Mathematiques": {
-        "G1-Triangles et proportionnalité": [ // C'est un sous-dossier réel pour les maths
+        "G1-Triangles et proportionnalité": [ 
             { name: "Triangles et proportionnalité", file: "Triangles et proportionnalité.txt" } 
         ],
-        "T1_STATISTIQUES": [ // C'est un sous-dossier réel pour les maths
+        "T1_STATISTIQUES": [ 
             { name: "Statistiques", file: "Statistiques.txt" } 
         ]
     },
     "Physique-Chimie": {
-        "Chimie": [ // Catégorie d'affichage
+        "Chimie": [ 
             { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
         ]
     },
-    "Science-de-la-Vie-et-de-la-Terre": { // Renommé de SVT, "Biologie" est une catégorie d'affichage
+    "Science-de-la-Vie-et-de-la-Terre": { 
         "Biologie": [ 
             { name: "L'Hérédité (Génétique)", file: "L'Hérédité (Génétique).txt" },
             { name: "Le programme génétique", file: "Le programme génétique.txt" }
         ]
     },
     "Musique": {
-        "Histoire": [ // Catégorie d'affichage
+        "Histoire": [ 
             { name: "La Chanson Engagée", file: "Chanson engagée.txt" } 
         ]
     },
     "Technologie": {
-        "Systèmes": [ // Catégorie d'affichage
+        "Systèmes": [ 
             { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" } 
         ]
     }
@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     displayMenu();
     // Boutons de démarrage des quiz
     document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixed')); // Quiz Mixte
-    // NOUVEAU : Boutons pour QCM ou Paragraphe uniquement
     const startQCMBtn = document.getElementById('start-qcm-btn');
     if (startQCMBtn) {
         startQCMBtn.addEventListener('click', () => startQuiz('qcm'));
@@ -155,22 +154,17 @@ function displayMenu() {
     for (const matiereName in STRUCTURE) {
         const matiereDiv = document.createElement('div');
         matiereDiv.className = 'matiere';
-        matiereDiv.innerHTML = `<h2>${matiereName.replace(/-/g, ' ')}</h2>`; // Affiche "Science de la Vie et de la Terre"
+        matiereDiv.innerHTML = `<h2>${matiereName.replace(/-/g, ' ')}</h2>`; 
 
         for (const chapitreName in STRUCTURE[matiereName]) {
             const chapitreDiv = document.createElement('div');
             chapitreDiv.className = 'chapitre';
-            chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; // Affiche "G1 Triangles et proportionnalité"
+            chapitreDiv.innerHTML = `<h3>${chapitreName.replace(/-/g, ' ')}</h3>`; 
 
             STRUCTURE[matiereName][chapitreName].forEach(lecon => {
-                let path;
-                // Logique conditionnelle pour le chemin du fichier
-                if (matiereName === "Mathematiques") {
-                    path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
-                } else {
-                    path = `${MATIERES_BASE_PATH}/${matiereName}/${lecon.file}`;
-                }
-
+                // --- CORRECTION CLÉ ICI : Toujours inclure chapitreName dans le chemin ---
+                const path = `${MATIERES_BASE_PATH}/${matiereName}/${chapitreName}/${lecon.file}`;
+                
                 const label = document.createElement('label');
                 label.innerHTML = `<input type="checkbox" data-path="${path}" data-name="${matiereName} - ${lecon.name}"> ${lecon.name}`;
                 label.querySelector('input').addEventListener('change', toggleSelection);
@@ -199,7 +193,6 @@ function updateSelectedItems() {
     const selectedBox = document.getElementById('selected-items');
     if (selectedItems.length === 0) {
         selectedBox.innerHTML = 'Aucun sujet sélectionné';
-        // Rendre tous les boutons de démarrage de quiz invisibles
         document.getElementById('start-quiz-btn').style.display = 'none';
         const startQCMBtn = document.getElementById('start-qcm-btn');
         if (startQCMBtn) startQCMBtn.style.display = 'none';
@@ -207,7 +200,6 @@ function updateSelectedItems() {
         if (startParagrapheBtn) startParagrapheBtn.style.display = 'none';
     } else {
         selectedBox.innerHTML = selectedItems.map(item => item.name).join(', ');
-        // Rendre tous les boutons de démarrage de quiz visibles
         document.getElementById('start-quiz-btn').style.display = 'block';
         const startQCMBtn = document.getElementById('start-qcm-btn');
         if (startQCMBtn) startQCMBtn.style.display = 'block';
@@ -219,7 +211,7 @@ function updateSelectedItems() {
 
 // --- Lancement et Génération du Quiz ---
 
-async function startQuiz(quizType = 'mixed') { // Ajout de quizType
+async function startQuiz(quizType = 'mixed') { 
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet.");
         return;
@@ -243,7 +235,6 @@ async function startQuiz(quizType = 'mixed') { // Ajout de quizType
     userScore = 0;
     totalQuizPoints = 0;
 
-    // Nombre de questions aléatoire entre 5 et 10
     const NUM_QUESTIONS_TO_GENERATE = Math.floor(Math.random() * 6) + 5; 
     console.log(`Demande de génération de ${NUM_QUESTIONS_TO_GENERATE} questions de type '${quizType}'.`);
 
@@ -264,7 +255,6 @@ async function startQuiz(quizType = 'mixed') { // Ajout de quizType
     }
     
     try {
-        // Passe le quizType à callGenerationAPI
         const aiData = await callGenerationAPI(combinedContent, quizType, NUM_QUESTIONS_TO_GENERATE); 
         console.log("Données AI brutes reçues:", aiData);
 
@@ -397,7 +387,6 @@ function displayCurrentQuestion() {
 }
 
 function renderQCM(questionData, container) {
-    // Ajouter les points du QCM au total des points possibles du quiz
     const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1;
     totalQuizPoints += qcmPoints; 
     console.log("Rendu QCM. Question:", questionData.question, "Options:", questionData.options, "Bonne réponse attendue (dans les données):", questionData.bonne_reponse, `(vaut ${qcmPoints} points)`); 
@@ -427,7 +416,6 @@ function renderQCM(questionData, container) {
 
 
 function renderParagraphe(questionData, container) {
-    // Les paragraphes sont notés sur 10 par l'IA, donc ils ajoutent 10 au total des points possibles
     totalQuizPoints += 10; 
     console.log("Rendu Paragraphe. Sujet:", questionData.sujet);
 
@@ -459,7 +447,7 @@ function submitQCM() {
 
     const userAnswer = selectedOption.value;
     const correctAnswer = questionData.bonne_reponse; 
-    const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1; // Récupère les points attribués ou 1 par défaut
+    const qcmPoints = questionData.points && typeof questionData.points === 'number' ? questionData.points : 1; 
 
     if (typeof correctAnswer === 'undefined' || correctAnswer === null) {
         appendToDebug(`Erreur: La bonne réponse ('bonne_reponse') est undefined ou null pour cette question QCM. Question ID: ${questionData.id || 'N/A'}`, 'error');
@@ -477,7 +465,7 @@ function submitQCM() {
     let feedback = '';
     if (userAnswer === correctAnswer) {
         feedback = `<p class="correct">✅ **Bonne réponse !** Vous gagnez ${qcmPoints} points.</p>`;
-        userScore += qcmPoints; // Ajoute les points variables
+        userScore += qcmPoints; 
         console.log(`Bonne réponse QCM. Score actuel: ${userScore}`);
     } else {
         feedback = `<p class="incorrect">❌ **Mauvaise réponse.**</p>`;
