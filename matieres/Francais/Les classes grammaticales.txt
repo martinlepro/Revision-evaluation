@@ -1,0 +1,84 @@
+Leçon de Français : Les classes grammaticales
+​Les mots variables
+​Le verbe exprime une action ou un état. Il se conjugue : il varie en temps, mode, voix, personne.
+Ex : je lis, tu lisais, nous lûmes...
+Le verbe est le noyau de la proposition.
+​Le nom sert à nommer les objets, les personnes, les idées. Il est en général précédé d'un déterminant.
+Ex : un mur, des danseurs, l'intelligence, l'Allemagne.
+Le nom est le noyau du groupe nominal.
+​L'adjectif est un mot qu'on ajoute au nom pour lui apporter une précision. Il s'accorde en genre et en nombre avec ce nom.
+Ex : un visage pâle, de rares apparitions...
+​Le déterminant introduit un nom. Il prend le genre et le nombre de ce nom.
+Ex : un ami, cinq cents personnes, tous les élèves...
+​Les articles signalent seulement le nom comme défini (connu) ou indéfini (inconnu) :
+​articles indéfinis : un, une, des ;
+​articles définis : le, la, les ;
+​Attention : certains articles définis se contractent avec les prépositions à ou de (\rightarrow du, de l', des, au, aux).
+​Les autres déterminants apportant une information supplémentaire :
+​déterminants possessifs : mon, ma, notre, leur...
+​déterminants démonstratifs : ce, cet, ces...
+​déterminants numéraux : deux, trois, cent, mille...
+​déterminants indéfinis : aucun, certain, plusieurs, quelques, tous...
+​déterminants interrogatifs ou exclamatifs : quel(le)(s)...
+​Le pronom remplace un nom, un groupe nominal. Il est généralement placé devant un verbe. Le pronom varie en personne, en genre, en nombre, mais aussi selon sa fonction. On distingue :
+​pronoms personnels : je, tu, il, elle, on, nous, elles, ils, moi, toi, te, eux, se, soi...
+​pronoms relatifs : qui, que, quoi, dont, où, lequel, laquelle, auxquels...
+​pronoms possessifs : le mien, les nôtres, le leur... et démonstratifs : celui-ci, celles-là, ceux-ci...
+​pronoms indéfinis : aucun, certains, les uns, les autres, personne, rien, quelqu'un, nul...
+​pronoms interrogatifs : lequel, laquelle, lesquels...
+​Une proposition est un groupe de mots organisé autour d'un verbe conjugué, qui exprime une idée. Une phrase contient une phrase simple (une seule proposition) ou phrase complexe (plusieurs propositions).
+Ex : Le soleil [brille]. Les oiseaux [chantent].
+​Les mots invariables
+​La préposition sert à relier un mot et son complément. Elle est donc toujours suivie d'un mot ou d'un groupe de mots.
+Les principales prépositions sont : à, dans, par, pour, en, vers, avec, de, sans, sous.
+Remarque : on appelle groupe prépositionnel tout groupe de mots introduit par une préposition. Un groupe prépositionnel a toujours une fonction de complément.
+Ex : rien à faire, une veste en cuir, partir pour Paris...
+​L'adverbe modifie le sens d'un verbe, d'un adjectif, d'un autre adverbe ou d'une phrase.
+​Les adverbes peuvent s'exprimer :
+​la manière : tous les adverbes en -ment (sérieusement, violemment...) mais aussi bien, mal, vite, ainsi...
+​le degré : très, peu, assez, trop, plus, moins, aussi, beaucoup...
+​le temps : hier, toujours, d'abord, puis, enfin...
+​le lieu : ici, là-bas, loin...
+​la négation : ne... pas, plus, jamais... ou l'affirmation : oui, certainement...
+​le degré de certitude : peut-être, sans doute, sûrement...
+​Les conjonctions relient deux éléments.
+​Les conjonctions de subordination introduisent une proposition subordonnée.
+Ce sont : que, quand, comme, si, et les locutions en que (puisque, parce que, lorsque, afin que, si bien que...).
+Ex : Je voudrais [que tu sortes].
+​Les conjonctions de coordination relient deux mots ou groupes de nature équivalente.
+Ce sont : mais, ou, et, donc, or, ni, car.
+​Fiche d'exercices sur les classes grammaticales
+​EX 1 : Classe des phrases
+​En haut, le jour se lève dans son gîte sous terre. \rightarrow Groupe nominal
+​Il est une personne qui sait tout. \rightarrow Pronom
+​Ce livre est à son frère. \rightarrow Déterminant possessif
+​Ces faits, nous avons pu les relever. \rightarrow Déterminant démonstratif
+​Le coq est un poisson vénéneux. Nous les évitons souvent sous nos mers. \rightarrow Adjectif
+​EX 2 : Les pronoms
+​Identifiez les pronoms dans la phrase suivante :
+Je le leur ai toujours rendu.
+​Reformulez la seconde proposition avec des pronoms pour supprimer les répétitions.
+Ce livre est à son frère. Il le lui a rendu.
+​Donnez la classe grammaticale du mot en gras et précisez quel groupe de mots il reprend.
+*J'ai vu mon ami. J'ai salué cet homme \rightarrow Pronom personnel (reprend cet homme).
+​Dans laquelle de ces phrases « personne » est-il un pronom indéfini ? Justifiez.
+a) Je crois que la personne qui vient de passer est un acteur célèbre.
+b) Personne n'a répondu à l'appel. \rightarrow Pronom indéfini (ne renvoie à aucun nom).
+​EX 3 : Chacune des phrases suivantes contient un déterminant. Identifiez-le et précisez sa classe grammaticale.
+​a) Je n'ai pas de lunettes de plongée. \rightarrow de, article partitif.
+b) J'avais promis cette surprise. \rightarrow cette, déterminant démonstratif.
+c) Je les ai vus chez les voisins. \rightarrow les, article défini.
+​EX 4 : Analyse d'extrait de texte
+​Dans les premiers jours du mois d'octobre 1515, une heure environ avant le coucher du soleil, un homme, qui voyageait à pied, arriva dans la petite ville de Digne. Les rares habitants qui se trouvaient en ce moment à leurs fenêtres ou sur le seuil de leurs maisons regardaient ce voyageur avec une sorte d'inquiétude.
+(Extrait de Les Misérables, Victor Hugo, 1862)
+​a) Donnez la classe grammaticale précise de chacun des mots soulignés.
+​qui \rightarrow Pronom relatif
+​voyageait \rightarrow Verbe conjugué
+​Les \rightarrow Article défini
+​rares \rightarrow Adjectif qualificatif
+​b) Expliquez pourquoi le narrateur ne donne pas le nom de l'homme.
+​\rightarrow Pour garder le mystère sur le voyageur et non pas un voyageur. (réponse manuscrite)
+​c) Expliquez pourquoi on ne peut pas dire une petite ville de Digne.
+​\rightarrow Digne est une ville. (réponse manuscrite)
+​d) À quoi renvoie le déterminant « leurs » ?
+​\rightarrow Aux rares habitants. (réponse manuscrite)
