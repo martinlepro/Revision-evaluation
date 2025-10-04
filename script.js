@@ -1,4 +1,4 @@
-// script.js (Modifié pour la note /20, la structure et la correction de bug)
+// script.js (Modifié pour le tirage aléatoire de 3 types de questions)
 
 window.onerror = function(msg, url, line, col, error) {
     document.getElementById('debug').textContent =
@@ -10,10 +10,9 @@ const MATIERES_BASE_PATH = 'matieres';
 let selectedItems = []; // Stocke les objets de leçon sélectionnés { path, type, name }
 let currentQuizData = []; // Données des questions générées par l'IA
 let currentQuestionIndex = 0;
-let correctAnswersCount = 0; // Nombre de bonnes réponses
-let totalQuizPoints = 0; // Le score total du quiz (doit être 20)
-let userScore = 0; // Score de l'utilisateur
-let isQuizRunning = false; // NOUVEAU : Drapeau pour prévenir le spam de "Commencer le quiz"
+let totalQuizPoints = 0; 
+let userScore = 0; 
+let isQuizRunning = false; 
 
 // URL de votre serveur proxy sécurisé sur Render
 const BASE_API_URL = 'https://cle-api.onrender.com';
@@ -21,10 +20,12 @@ const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
 const GENERATION_API_URL = `${BASE_API_URL}/generation`; 
 
 // --- Gestion de la structure des matières (Mise à jour) ---
+// Note : Le type ici est un "type de leçon", pas le type de question générée.
+// Le tirage aléatoire est fait dans startQuiz.
 const STRUCTURE = {
     "Mathematiques": {
         "Nombres_Premiers": [
-            { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" }
+            { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" } // Leçon support
         ],
         "T1_STATISTIQUES": [
             { name: "Statistiques (QCM)", file: "lecon_statistiques.txt", type: "qcm" } 
@@ -38,7 +39,7 @@ const STRUCTURE = {
             { name: "Révolution Française", file: "lecon_revolution.txt", type: "paragraphe" }
         ],
         "Les_Fleuves_du_Monde": [
-            { name: "Les Fleuves du Monde (QCM)", file: "lecon_fleuves.txt", type: "qcm" }
+            { name: "Les Fleuves du Monde", file: "lecon_fleuves.txt", type: "qcm" }
         ]
     },
     "Allemand": {
@@ -52,23 +53,19 @@ const STRUCTURE = {
             { name: "Grammaire de Base", file: "lecon_grammaire_base.txt", type: "qcm" }
         ]
     },
-    "Art_Plastique": { // NOUVELLE MATIÈRE
+    "Art_Plastique": { 
         "<description>": [
             { name: "Analyse d'Œuvre", file: "lecon_description_oeuvre.txt", type: "paragraphe" }
         ]
     }
 };
 
-// --- Initialisation et chargement des ressources ---
+// --- Initialisation et chargement des ressources (inchangé) ---
 
 document.addEventListener('DOMContentLoaded', () => {
     loadStructure();
-    // Le bouton utilise maintenant le drapeau isQuizRunning
     document.getElementById('start-quiz-btn').addEventListener('click', startQuiz); 
 });
-
-
-// --- Fonctions de chargement et sélection (inchangées) ---
 
 function loadStructure() {
     const menuContainer = document.getElementById('menu-container');
@@ -91,13 +88,12 @@ function loadStructure() {
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 
-                // Remplacement du préfixe <exemple> pour un affichage plus propre
                 const chapterPath = `${matiere}/${chapitre.replace(/[<>]/g, '')}`;
                 const fullPath = `${MATIERES_BASE_PATH}/${chapterPath}/${itemObject.file}`;
                 
                 checkbox.dataset.item = JSON.stringify({ 
                     path: fullPath,
-                    type: itemObject.type,
+                    type: itemObject.type, // Type de la leçon
                     name: itemObject.name
                 });
                 
@@ -134,7 +130,24 @@ function updateSelection(event) {
     selectionDisplay.textContent = selectedItems.map(item => item.name).join(' | ');
 }
 
-// --- Logique principale du Quiz (Mise à jour pour le bug de démarrage) ---
+// --- Logique principale du Quiz (Mise à jour pour le tirage aléatoire) ---
+
+// Fonction pour choisir aléatoirement le type de question à générer
+function determineQuestionType() {
+    // 33% de chance pour chaque type de question, si la leçon s'y prête.
+    const random = Math.random(); 
+
+    if (random < 0.33) {
+        return 'qcm';
+    } else if (random < 0.66) {
+        // Le type 'paragraphe' est le plus exigeant pour l'élève (longue réponse).
+        return 'paragraphe';
+    } else {
+        // 'reponse_ouverte' est une question simple sans QCM, corrigée par l'IA.
+        return 'reponse_ouverte';
+    }
+}
+
 
 async function startQuiz() {
     if (selectedItems.length === 0) {
@@ -142,122 +155,127 @@ async function startQuiz() {
         return;
     }
     
-    // NOUVEAU : Empêcher le double-clic
     if (isQuizRunning) {
         console.log("Quiz déjà en cours de génération/exécution.");
         return;
     }
     isQuizRunning = true; 
     
-    // Initialisation des variables de score
-    correctAnswersCount = 0;
-    totalQuizPoints = 0;
     userScore = 0;
+    totalQuizPoints = 0;
 
     document.getElementById('selection-view').style.display = 'none';
     document.getElementById('quiz-view').style.display = 'block';
 
     currentQuizData = []; 
     
+    // Le quiz aura un nombre de questions égal au nombre de leçons sélectionnées
     for (const lesson of selectedItems) {
         try {
-            document.getElementById('question-container').innerHTML = `<h2>🧠 Génération du contenu pour **${lesson.name}** (${lesson.type.toUpperCase()}) en cours...</h2>`;
+            // Déterminer le type de question à générer pour CETTE leçon
+            const questionType = determineQuestionType();
+
+            document.getElementById('question-container').innerHTML = `<h2>🧠 Génération d'une question de type **${questionType.toUpperCase()}** basée sur **${lesson.name}** en cours...</h2>`;
             
+            // 1. Récupérer le contenu brut de la leçon (.txt)
             const lessonResponse = await fetch(lesson.path);
             if (!lessonResponse.ok) {
                 throw new Error(`Le fichier de leçon ${lesson.path} n'a pas été trouvé (Status: ${lessonResponse.status}).`);
             }
             const lessonText = await lessonResponse.text();
             
-            const fullPrompt = createGenerationPrompt(lesson.type, lessonText);
+            // 2. Construire le prompt pour l'IA
+            const fullPrompt = createGenerationPrompt(questionType, lesson.name, lessonText);
+            
+            // 3. Appeler l'API
             const generatedContentJSON = await callGenerationAPI(fullPrompt);
 
-            if (lesson.type === 'qcm') {
+            // 4. Mettre le contenu généré à jour
+            if (questionType === 'qcm') {
                 if (generatedContentJSON.questions && Array.isArray(generatedContentJSON.questions)) {
-                    currentQuizData.push(...generatedContentJSON.questions);
+                    // L'IA génère ici un tableau d'UNE SEULE question QCM pour simplifier le flux
+                    currentQuizData.push(generatedContentJSON.questions[0]); 
                 } else {
-                    console.warn("L'IA a généré un JSON QCM mais le champ 'questions' est manquant ou non valide.", generatedContentJSON);
+                    console.warn("L'IA n'a pas renvoyé le format QCM attendu.");
                 }
-            } else if (lesson.type === 'paragraphe') {
+            } else if (questionType === 'paragraphe' || questionType === 'reponse_ouverte') {
+                // On ajoute l'objet unique (paragraphe ou réponse ouverte)
                 currentQuizData.push(generatedContentJSON);
             }
 
         } catch (error) {
             console.error(`Erreur lors du traitement de la leçon ${lesson.name}:`, error);
             document.getElementById('question-container').innerHTML = `
-                <h2>❌ Erreur de Génération</h2>
-                <p>Impossible de générer le contenu pour **${lesson.name}**.</p>
-                <p class="error">Détails: ${error.message}</p>
+                <h2>❌ Erreur de Génération pour ${lesson.name}</h2>
+                <p>Détails: ${error.message}</p>
                 <button onclick="window.location.reload()">Retour au menu</button>`;
-            isQuizRunning = false; // Libérer le drapeau en cas d'échec
+            isQuizRunning = false;
             return; 
         }
     }
     
-    if (currentQuizData.length === 0) {
-         document.getElementById('question-container').innerHTML = `
-            <h2>❌ Aucune question n'a pu être générée.</h2>
-            <button onclick="window.location.reload()">Retour au menu</button>`;
-        isQuizRunning = false;
-        return;
-    }
-
-    // Calcul du score total des QCM générés (doit être 20)
+    // Calcul du score total des QCM générés (c'est maintenant le total des points des questions générées)
+    // Seules les QCM et Réponses Ouvertes ont des points pour le moment.
     totalQuizPoints = currentQuizData
-        .filter(item => item.type === 'qcm')
+        .filter(item => item.type === 'qcm' || item.type === 'reponse_ouverte')
         .reduce((sum, item) => sum + (item.points || 0), 0);
     
     currentQuizData.sort(() => Math.random() - 0.5);
     currentQuestionIndex = 0;
     displayCurrentQuestion();
-    isQuizRunning = false; // Le quiz est lancé, le drapeau peut être désactivé ici (ou au rechargement)
+    isQuizRunning = false; 
 }
 
 
-// --- Fonctions d'aide pour l'IA (Mise à jour du QCM prompt) ---
+// --- Fonctions d'aide pour l'IA (Mise à jour pour les 3 types) ---
 
-function createGenerationPrompt(type, lessonText) {
+function createGenerationPrompt(type, lessonName, lessonText) {
+    // Instruction de base commune pour le contexte
+    const systemInstruction = `Vous êtes un générateur de quiz pour des élèves de 3ème. Générez une seule question basée UNIQUEMENT sur la leçon fournie ci-dessous. Le résultat doit être STRICTEMENT un objet JSON.`;
+
+    // Leçons pour le contexte
+    const lessonContext = `LEÇON FOURNIE (${lessonName}) : \n---\n${lessonText}\n---`;
+
     if (type === 'qcm') {
-        // NOUVEAU : Instruction pour la pondération sur 20 points
-        return `Vous êtes un générateur de quiz pour des élèves de 3ème. Générez entre 5 et 10 questions à choix multiples (QCM) basées UNIQUEMENT sur la leçon fournie ci-dessous.
+        // Pour simplifier le flux, on demande UNE seule question QCM pondérée.
+        return `${systemInstruction}
         
-        Chaque question doit inclure un champ 'points' (ex: 2, 3 ou 4) représentant sa difficulté. Le TOTAL des points de toutes les questions doit être EXCLUSIVEMENT 20.
+        Générez UNE question à choix multiple (QCM). La question doit inclure un champ 'points' (ex: 3 ou 4) pour une difficulté sur un total théorique de 20 points si l'élève avait 5 questions.
         
-        Le format de retour doit être STRICTEMENT un objet JSON. 
         Le format JSON attendu est : 
         { "questions": [
-            {"type": "qcm", "question": "...", "options": ["...", "...", "..."], "reponse_correcte": "...", "explication": "...", "points": X },
-            ...
+            {"type": "qcm", "question": "...", "options": ["...", "...", "..."], "reponse_correcte": "...", "explication": "...", "points": 4 }
         ]}
         
-        LEÇON FOURNIE :
-        ---
-        ${lessonText}
-        ---
-        `;
+        ${lessonContext}`;
+        
     } else if (type === 'paragraphe') {
-        // Remplacement du préfixe <exemple> par le sujet pour le prompt
-        const sujetCleaned = selectedItems
-            .filter(item => item.path.includes(lessonText.substring(0, 50)))
-            .map(item => item.name)[0] || "Paragraphe Argumenté";
-
-        return `Vous êtes un concepteur de sujets d'examen pour des élèves de 3ème. Générez UN sujet de paragraphe argumenté basé UNIQUEMENT sur la leçon fournie ci-dessous.
+        // Similaire au paragraphe argumenté
+        return `${systemInstruction}
         
-        Le format de retour doit être STRICTEMENT un objet JSON.
+        Générez UN sujet de paragraphe argumenté. Le format n'a pas besoin de points.
+        
         Le format JSON attendu est : 
-        { "type": "paragraphe_ia", "sujet": "${sujetCleaned}", "attendus": ["...", "...", "..."], "consigne_ia": "Corrigez le texte de l'élève en 3e. Notez-le sur 10, en prenant en compte la clarté des arguments, la pertinence des exemples donnés et la structure de l'exposé." }
+        { "type": "paragraphe_ia", "sujet": "...", "attendus": ["...", "..."], "consigne_ia": "Corrigez le texte de l'élève en 3e. Notez-le sur 10, en prenant en compte la clarté des arguments, la pertinence des exemples donnés et la structure de l'exposé." }
         
-        LEÇON FOURNIE :
-        ---
-        ${lessonText}
-        ---
-        `;
+        ${lessonContext}`;
+        
+    } else if (type === 'reponse_ouverte') {
+        // NOUVEAU : Question simple avec une réponse courte et des points
+        return `${systemInstruction}
+        
+        Générez UNE question courte à réponse ouverte. La question doit inclure un champ 'points' (ex: 2 ou 3) pour une difficulté. Le champ 'reponse_attendue' doit contenir la réponse courte idéale.
+        
+        Le format JSON attendu est : 
+        { "type": "reponse_ouverte", "question": "...", "points": 3, "reponse_attendue": "...", "consigne_ia": "Corrigez la réponse de l'élève. Vérifiez si sa réponse est similaire ou équivalente à la réponse attendue. Donnez une note sur 3 (pour le pointage) et une brève explication." }
+        
+        ${lessonContext}`;
     }
     return "Erreur: Type de contenu inconnu.";
 }
 
+// Fonction qui appelle la route /generation du serveur Render (inchangée)
 async function callGenerationAPI(fullPrompt) {
-    // ... (Fonction inchangée) ...
     const response = await fetch(GENERATION_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -284,14 +302,14 @@ async function callGenerationAPI(fullPrompt) {
 }
 
 
-// --- Fonctions de rendu (Mise à jour de l'affichage QCM) ---
+// --- Fonctions de rendu (Mise à jour pour les 3 types) ---
 
 function displayCurrentQuestion() {
     const questionData = currentQuizData[currentQuestionIndex];
     const container = document.getElementById('question-container');
     
-    // Affichage du score actuel (uniquement si c'est un QCM)
     let scoreDisplay = '';
+    // On affiche le score si la question a des points (QCM ou Réponse Ouverte)
     if (totalQuizPoints > 0) {
         scoreDisplay = ` | Score: ${userScore} / ${totalQuizPoints} pts`;
     }
@@ -303,11 +321,12 @@ function displayCurrentQuestion() {
         container.innerHTML += renderQCM(questionData);
     } else if (questionData.type === 'paragraphe_ia') {
         container.innerHTML += renderParagraphe(questionData);
+    } else if (questionData.type === 'reponse_ouverte') { // NOUVEAU
+        container.innerHTML += renderReponseOuverte(questionData);
     }
 }
 
 function renderQCM(data) {
-    // Affiche la pondération de la question
     const pointsDisplay = data.points ? `<p class="qcm-points">Cette question vaut **${data.points}** points.</p>` : '';
     
     let html = `<div class="qcm-question">
@@ -324,7 +343,26 @@ function renderQCM(data) {
     return html;
 }
 
-// --- Fonctions de soumission et de correction (Mise à jour du score QCM) ---
+function renderReponseOuverte(data) { // NOUVEAU
+    const pointsDisplay = data.points ? `<p class="qcm-points">Cette question vaut **${data.points}** points.</p>` : '';
+    
+    let html = `<div class="reponse-ouverte-sujet">
+        ${pointsDisplay}
+        <h4>Question : ${data.question}</h4>
+        <textarea id="ia-answer" rows="5" placeholder="Répondez brièvement ici (3-4 phrases maximum)..."></textarea>
+        <button onclick="submitReponseOuverte()">Envoyer à l'IA pour correction</button></div>`;
+    return html;
+}
+
+function renderParagraphe(data) {
+    let html = `<div class="paragraphe-sujet"><h4>Sujet : ${data.sujet}</h4>`;
+    html += `<textarea id="ia-answer" rows="10" placeholder="Rédigez votre paragraphe argumenté ici..."></textarea>`;
+    html += `<button onclick="submitParagrapheIA()">Envoyer à l'IA pour correction</button></div>`;
+    return html;
+}
+
+
+// --- Fonctions de soumission et de correction (Mise à jour pour les 3 types) ---
 
 function submitQCM() {
     const questionData = currentQuizData[currentQuestionIndex];
@@ -341,7 +379,6 @@ function submitQCM() {
     const points = questionData.points || 0;
 
     if (isCorrect) {
-        // NOUVEAU : Ajout des points au score utilisateur
         userScore += points; 
         
         resultDiv.innerHTML = `<p class="correct">✅ Correct! Vous gagnez **${points} points**.</p><p>${questionData.explication}</p>`;
@@ -352,8 +389,97 @@ function submitQCM() {
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
+async function submitReponseOuverte() { // NOUVEAU
+    const questionData = currentQuizData[currentQuestionIndex];
+    const userAnswer = document.getElementById('ia-answer').value.trim();
+    const resultDiv = document.getElementById('correction-feedback');
 
-// --- Navigation (Mise à jour pour le score final) ---
+    if (userAnswer.length < 5) {
+        alert("Veuillez écrire une réponse.");
+        return;
+    }
+    
+    resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
+    
+    // Le prompt contient la consigne pour l'IA et la réponse de l'élève
+    const prompt = `Consigne: ${questionData.consigne_ia}\n\nRéponse attendue: ${questionData.reponse_attendue}\n\nRéponse de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
+    
+    try {
+        const responseText = await callCorrectionAPI(prompt); 
+        
+        // On essaie de récupérer la note (le premier nombre dans la réponse)
+        const noteMatch = responseText.match(/(\d+(\.\d+)?)\s*\/\s*(\d+(\.\d+)?)/);
+        if (noteMatch) {
+            const userPoints = parseFloat(noteMatch[1]);
+            userScore += userPoints;
+            
+            resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div><p class="correct">Vous avez obtenu **${userPoints} points**.</p>`;
+        } else {
+             // Si pas de note trouvée (problème IA), on affiche le retour brut
+            resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div><p class="warning">Score non déterminé. Vérifiez la réponse de l'IA.</p>`;
+        }
+        
+        document.getElementById('next-question-btn').style.display = 'block';
+
+    } catch (error) {
+        console.error("Erreur lors de la correction:", error);
+        resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA. Détails: ${error.message}</p>`;
+    }
+}
+
+
+async function submitParagrapheIA() {
+    const questionData = currentQuizData[currentQuestionIndex];
+    const userAnswer = document.getElementById('ia-answer').value.trim();
+    const resultDiv = document.getElementById('correction-feedback');
+
+    if (userAnswer.length < 50) {
+        alert("Veuillez écrire un paragraphe plus long (minimum 50 caractères).");
+        return;
+    }
+    
+    resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
+    
+    // Le prompt contient la consigne pour l'IA et la réponse de l'élève
+    const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
+    
+    try {
+        // Le paragraphe argumenté n'ajoute pas de score au compteur total.
+        const responseText = await callCorrectionAPI(prompt); 
+        
+        resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div>`;
+        document.getElementById('next-question-btn').style.display = 'block';
+
+    } catch (error) {
+        console.error("Erreur lors de la correction:", error);
+        resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA. Détails: ${error.message}</p>`;
+    }
+}
+
+
+// Fonction d'appel à la route /correction (inchangée)
+async function callCorrectionAPI(prompt) {
+    const response = await fetch(CORRECTION_API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            prompt: prompt 
+        }),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
+        throw new Error(`Erreur API Render lors de la Correction: ${errorData.error || response.statusText}`);
+    }
+
+    const data = await response.json(); 
+    return data.correction_text;
+}
+
+
+// --- Navigation (inchangée) ---
 
 function nextQuestion() {
     const correctionFeedbackDiv = document.getElementById('correction-feedback');
@@ -370,62 +496,20 @@ function nextQuestion() {
         displayCurrentQuestion();
     } else {
         // FIN DU QUIZ : Affichage du score total
-        const finalNote = (userScore / totalQuizPoints) * 20; // Calcul de la note sur 20
-        const finalNoteRounded = finalNote.toFixed(2);
-        
         let feedback = `<h2>🎉 Quiz terminé !</h2>`;
+        
+        // On ne calcule la note sur 20 que si des questions ont été notées.
         if (totalQuizPoints > 0) {
-            feedback += `<p>Votre performance globale est de **${userScore} / ${totalQuizPoints} points**.</p>`;
-            feedback += `<h3>Votre note sur 20 est : **${finalNoteRounded} / 20**</h3>`;
+            // Note sur 20 calculée à partir du score obtenu / score total des questions générées
+            const finalNote = (userScore / totalQuizPoints) * 20; 
+            const finalNoteRounded = finalNote.toFixed(2);
+            
+            feedback += `<p>Votre performance globale est de **${userScore.toFixed(2)} / ${totalQuizPoints} points**.</p>`;
+            feedback += `<h3>Votre note estimée sur 20 est : **${finalNoteRounded} / 20**</h3>`;
         } else {
-             feedback += `<p>Aucune question QCM n'a été trouvée pour la notation.</p>`;
+             feedback += `<p>Ce quiz ne contenait que des sujets de rédaction (paragraphes) non notés sur ce barème.</p>`;
         }
 
         document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer</button>';
-        // Le drapeau est implicitement réinitialisé par le rechargement de la page.
     }
 }
-
-
-// --- Fonctions inchangées ---
-async function submitParagrapheIA() {
-    const questionData = currentQuizData[currentQuestionIndex];
-    const userAnswer = document.getElementById('ia-answer').value.trim();
-    const resultDiv = document.getElementById('correction-feedback');
-
-    if (userAnswer.length < 50) {
-        alert("Veuillez écrire un paragraphe plus long (minimum 50 caractères).");
-        return;
-    }
-    
-    resultDiv.innerHTML = '<p>Correction par l\'IA en cours... 🧠</p>';
-    
-    const prompt = `${questionData.consigne_ia}\n\nTexte de l'élève à corriger:\n\n---\n${userAnswer}\n---`;
-    
-    try {
-        const responseText = await callCorrectionAPI(prompt); 
-        
-        resultDiv.innerHTML = `<div class="ia-feedback">${responseText}</div>`;
-        document.getElementById('next-question-btn').style.display = 'block';
-
-    } catch (error) {
-        console.error("Erreur lors de la correction:", error);
-        resultDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA. Détails: ${error.message}</p>`;
-    }
-}
-
-async function callCorrectionAPI(prompt) {
-    const response = await fetch(CORRECTION_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt }),
-    });
-    
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({error: 'Réponse serveur non-JSON ou vide.'}));
-        throw new Error(`Erreur API Render lors de la Correction: ${errorData.error || response.statusText}`);
-    }
-
-    const data = await response.json(); 
-    return data.correction_text;
-            }
