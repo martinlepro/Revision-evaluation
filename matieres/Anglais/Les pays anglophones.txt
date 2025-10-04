@@ -3,7 +3,7 @@ Pays (Country) Capitale (Capital) Nationalité/Langue (Nationality/Language)
 United States of America Washington D.C. American
 Canada Ottawa Canadian
 Ireland Dublin Irish
-South Africa Pretoria / [illisible] Southern
+South Africa Pretoria / Southern African
 Australia Canberra Australian
 New Zealand Wellington New Zealander
 India New Delhi Indian
