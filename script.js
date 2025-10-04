@@ -23,7 +23,7 @@ const GENERATION_API_URL = `${BASE_API_URL}/generation`;
 // La propriété 'type' a été RETIRÉE. Le type de question est choisi aléatoirement par l'IA.
 const STRUCTURE = {
     "Mathematiques": {
-        "G1_STATISTIQUES": [
+        "G1-STATISTIQUES": [
             { name: "Triangles et Proportionnalité", file: "Triangles et proportionnalité.txt" } 
         ],
         "T1_STATISTIQUES": [
