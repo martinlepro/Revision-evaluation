@@ -64,30 +64,18 @@ console.log("BASE_API_URL:", BASE_API_URL);
 // CORRECTION DÉFINITIVE DES CHEMINS POUR MUSIQUE ET TECHNOLOGIE (Les clés 'musique' et 'technologie' doivent correspondre aux noms de dossiers)
 const STRUCTURE = {
     "Anglais": {
-        "Culture": [ 
-            { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
-        ]
+            { name: "Les pays anglophones", file: "Les pays anglophones.txt" }
     },
     "Francais": {
-        "Analyse": [
-            { name: "Analyse d'un texte", file: "Analyse d'un texte .txt" } 
-        ],
-        "Écriture": [ 
+            { name: "Analyse d'un texte", file: "Analyse d'un texte .txt" }
             { name: "L'Autoportrait", file: "Autoportrait.txt" },
-            { name: "Qui est je", file: "Qui est je.txt" } 
-        ],
-        "Grammaire": [
+            { name: "Qui est je", file: "Qui est je.txt" }
             { name: "L'accord du verbe et du sujet", file: "L'accord du verbe et du sujet .txt" },
             { name: "Les classes grammaticales", file: "Les classes grammaticales.txt" }
-        ],
-        "Conjugaison": [
             { name: "Les Temps Simples de l'Indicatif", file: "Les Temps Simples de l'Indicatif.txt" }
-        ]
     },
     "Histoire_Geo": {
-        "Geographie": [ 
-            { name: "Les aires urbaines", file: "Les aires urbaines.txt" } 
-        ]
+            { name: "Les aires urbaines", file: "Les aires urbaines.txt" }
     },
     "Mathematiques": {
         "G1-Triangles et proportionnalité": [ 
@@ -98,25 +86,17 @@ const STRUCTURE = {
         ]
     },
     "Physique-Chimie": {
-        "Chimie": [ 
-            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
-        ]
+            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" }
     },
     "Science-de-la-Vie-et-de-la-Terre": { 
-        "Biologie": [ 
             { name: "L'Hérédité (Génétique)", file: "L'Hérédité (Génétique).txt" },
             { name: "Le programme génétique", file: "Le programme génétique.txt" }
-        ]
     },
     "Musique": {
-        "Histoire": [ 
-            { name: "La Chanson Engagée", file: "Chanson engagée.txt" } 
-        ]
+            { name: "La Chanson Engagée", file: "Chanson engagée.txt" }
     },
     "Technologie": {
-        "Systèmes": [ 
-            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" } 
-        ]
+            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" }
     }
 };
 
