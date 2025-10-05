@@ -1,0 +1,43 @@
+Arts Plastiques - Méthode pour Analyser une Œuvre d'Art
+​L'analyse d'une œuvre d'art est un travail d'observation et de réflexion qui procède par étapes importantes.
+​1ère Partie : La Dénotation (La présentation et la description de l'œuvre)
+​Cette première partie comprend plusieurs étapes qui sont les données essentielles pour l'interprétation de l'œuvre.
+​Le cartel de l'œuvre (sa carte d'identité : ATDTDLN)
+​Auteur
+​Titre
+​Date de création
+​Technique(s) (huile sur toile ; fusain ; gouaches ; argile ; bois ; bronze, technique mixte, etc...)
+​Dimensions
+​Localisation ou lieu de conservation (musée, espace public, bâtiment)
+​Nature de l'œuvre (peinture, collage, photographie, dessin, gravure, sculpture, assemblage, installation, architecture, vidéo)
+​La description de l'œuvre
+​Il faut être le plus précis possible, comme s'il s'agissait de décrire l'œuvre à quelqu'un qui ne la voit pas.
+​J'observe et je décris les points suivants :
+​Les formes (\text{formes abstraites} ou \text{figuratives} : objets, personnages, paysage...)
+​Les couleurs principales (dégradés, chaudes/froides, complémentaires, en aplat, monochromes...)
+​Les qualités de l'œuvre (symboliques, imaginaires, expressives : que représentent-elles en valeur ?)
+​La composition (organisation) : repérer la disposition des éléments dans l'œuvre (ex : symétrique/asymétrique, dynamique/statique, centrée/pyramidale, équilibré/déséquilibré...)
+​Repérer les lignes de force de l'œuvre (ex : obliques/verticales/horizontales)
+​L'espace :
+​Pour une œuvre en 3D : Où est-elle présente ? (en extérieur/intérieur/accrochée à un bâtiment...)
+​Pour une œuvre en 2D : Comment est rendu l'espace ? (la \text{taille de l'œuvre} ; le \text{premier plan} ; le \text{deuxième plan} ; l'utilisation de la perspective linéaire ou plane ; le chevauchement)
+​La lumière : Est-ce une lumière naturelle ou artificielle ? Est-elle visible, vive, diffuse ? D'où vient-elle ? Est-ce qu'un objet l'éclaire ? Y a-t-il des ombres, des contrastes ?
+​La matérialité de l'œuvre :
+​Quels \text{matériaux} utilisés ? (bruts, naturels, artificiels, transformés ?)
+​Y a-t-il des \text{objets} réels ? Sont-ils \text{transformés} ? \text{Détournés} ?
+​Quelle \text{texture} (aspect visuel et tactile de l'œuvre) ?
+​Quel \text{support} ?
+​Le geste (la trace des outils est-elle visible ?)
+​2ème Partie : La Connotation (L'Interprétation de l'œuvre)
+​À partir de vos observations, il s'agit de \text{deviner} ce que l'artiste a voulu exprimer.
+​Votre description doit soutenir votre ou vos \text{hypothèses}. Une œuvre d'art n'est jamais gratuite, et tous les \text{choix formels ont un sens}.
+​Vous pouvez aussi \text{questionner le titre de l'œuvre} et son \text{rapport avec l'œuvre}.
+​Le message de l'œuvre
+​Pourquoi l'artiste a-t-il fait cette œuvre ?
+​Quelles sont \text{ses intentions} ?
+​3ème Partie : Mise en Contexte
+​Situer l'œuvre dans la \text{carrière de l'artiste} et dans l'\text{histoire de l'art}.
+​S'agit-il de \text{relier l'œuvre à un mouvement/courant artistique} ?
+​Est-ce que l'œuvre appartient à un \text{mouvement/courant artistique} ?
+​Est-ce qu'elle exprime un \text{événement historique, social, politique} ?
+​En quoi cette œuvre est \text{importante} dans l'histoire de l'art ou \text{d'autres œuvres} ?
