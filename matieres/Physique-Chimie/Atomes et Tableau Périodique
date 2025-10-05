@@ -1,0 +1,51 @@
+Physique - Chimie
+​⚛️ Modèle de l'atome et Éléments
+​Schéma de l'atome
+​Noyau : contient des protons (charge électrique positive \text{+}) et des neutrons (charge électrique nulle).
+​Électrons (charge électrique négative \text{-}) : tournent autour du noyau sur des couches électroniques.
+​Le nombre de protons est égal au nombre d'électrons.
+​L'atome est électriquement neutre car il comporte toujours autant de protons que d'électrons. Ainsi, les charges positives compensent les charges négatives. La charge électrique totale d'un atome est donc égale à zéro.
+​Tableau récapitulatif (exemples)
+
+Nom de l'atome Symbole Chimique Numéro atomique Z (nombre de protons) Nombre de masse A (nombre de nucléons) Nombre de neutrons (\text{A - Z}) Nombre d'électrons
+Hydrogène \text{H} 1 1 0 1
+Lithium \text{Li} 3 7 4 3
+Bore \text{B} 5 11 6 5
+Fluor \text{F} 9 19 10 9
+
+​Les particules positives sont au centre. On les appelle les protons.
+​Les protons et électrons portent une charge électrique élémentaire (on suppose qu'ils contiennent une charge).
+​Le noyau est électriquement positif puisqu'il contient des protons \text{+} et des neutrons (neutres).
+​L'atome est symbolisé par \text{}_{\text{Z}}^{\text{A}}\text{X} : \text{A} (nombre de masse) est au-dessus et \text{Z} (numéro atomique) est en-dessous. La notation de l'ion n'est pas la bonne car les électrons doivent être sur la couche. Les atomes sont électriquement neutres : nombre de protons = nombre d'électrons.
+​Notation des atomes
+\text{}_{\text{Z}}^{\text{A}}\text{X}
+​\text{X} : Symbole de l'atome
+​\text{A} : Nombre de masse (nombre de nucléons = protons + neutrons)
+​\text{Z} : Numéro atomique (nombre de protons = nombre d'électrons)
+​Exemple : \text{}_{\text{8}}^{\text{16}}\text{O} (Oxygène)
+​8 protons (\text{Z})
+​8 électrons (\text{Z})
+​16 - 8 = 8 neutrons (\text{A - Z})
+​Tableau périodique simplifié des éléments
+| \text{Z} | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| | Hydrogène | Hélium | Lithium | Béryllium | Bore | Carbone | Azote | Oxygène | Fluor | Néon |
+| \text{A} | 1 | 4 | 7 | 9 | 11 | 12 | 14 | 16 | 19 | 20 |
+| \text{Z} | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| \text{A} | 23 | 24 | 27 | 28 | 31 | 32 | 35 | 40 |
+| \text{Z} | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 |
+| | Sodium | Magnésium | Aluminium | Silicium | Phosphore | Soufre | Chlore | Argon |
+| \text{A} | 39 | 40 | | | | | | |
+| \text{Z} | 19 | 20 | | | | | | |
+| | Potassium | Calcium | | | | | | |
+​⚡ Courant Électrique
+​Schéma du circuit électrique
+(Un schéma de circuit montrant des ampoules (\times), un générateur (\text{G}), un ampèremètre (\text{A}), et des flèches pour le sens conventionnel et le sens de déplacement des électrons.)
+​Le sens conventionnel de déplacement du courant électrique est le sens de déplacement des charges positives. \rightarrow sens de la flèche rouge (de \text{+} vers \text{-} à l'extérieur du générateur).
+​Le sens de déplacement des électrons est l'inverse du sens conventionnel du courant électrique. \rightarrow sens de la flèche verte (de \text{-} vers \text{+} à l'extérieur du générateur).
+​Dans les métaux, les électrons ne sont pas libres et ne peuvent pas se déplacer.
+​Le courant électrique est dû à un déplacement d'ensemble (ordonné) des électrons libres qui se déplacent dans le sens inverse du courant électrique conventionnel.
+​Rappel :
+Les particules chargées dans un atome sont les protons (\text{+}) et les électrons (\text{-}).
+Le nombre d'électrons est le même que celui de protons dans un atome.
+Le nombre de protons dans l'atome d'oxygène est \text{Z}=8 et il a un nombre de masse \text{A}=16.
