@@ -63,56 +63,61 @@ console.log("BASE_API_URL:", BASE_API_URL);
 // --- Gestion de la structure des matières (Catalogue des leçons) ---
 // CORRECTION DÉFINITIVE DES CHEMINS POUR MUSIQUE ET TECHNOLOGIE (Les clés 'musique' et 'technologie' doivent correspondre aux noms de dossiers)
 const STRUCTURE = {
-    "Mathematiques": {
-        "G1_STATISTIQUES": [
-            { name: "Triangles et Proportionnalité", file: "Triangles et proportionnalité.txt" }
-        ],
-        "T1_STATISTIQUES": [
-            { name: "Statistiques", file: "Statistiques.txt" }
+    "Anglais": {
+        "Culture": [ 
+            { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
         ]
     },
     "Francais": {
-        "Leçons": [
-            { name: "Autoportrait", file: "Autoportrait.txt" }
+        "Analyse": [
+            { name: "Analyse d'un texte", file: "Analyse d'un texte .txt" } 
+        ],
+        "Écriture": [ 
+            { name: "L'Autoportrait", file: "Autoportrait.txt" },
+            { name: "Qui est je", file: "Qui est je.txt" } 
+        ],
+        "Grammaire": [
+            { name: "L'accord du verbe et du sujet", file: "L'accord du verbe et du sujet .txt" },
+            { name: "Les classes grammaticales", file: "Les classes grammaticales.txt" }
+        ],
+        "Conjugaison": [
+            { name: "Les Temps Simples de l'Indicatif", file: "Les Temps Simples de l'Indicatif.txt" }
         ]
     },
     "Histoire_Geo": {
-        "Géographie": [
-            { name: "Les aires urbaines", file: "Les aires urbaines.txt" }
+        "Geographie": [ 
+            { name: "Les aires urbaines", file: "Les aires urbaines.txt" } 
+        ]
+    },
+    "Mathematiques": {
+        "G1-Triangles et proportionnalité": [ 
+            { name: "Triangles et proportionnalité", file: "Triangles et proportionnalité.txt" } 
         ],
-        // Leçons de rédaction pour le mode Paragraphe
-        "Paragraphe": [
-            { name: "Révolution Française (Sujet 1)", file: "La_Revolution_Francaise/Paragraphe_Argumente_1.json", type: "paragraphe" }
+        "T1_STATISTIQUES": [ 
+            { name: "Statistiques", file: "Statistiques.txt" } 
         ]
     },
-    "Physique_Chimie": {
-        "Atome & Périodique": [
-            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" }
+    "Physique-Chimie": {
+        "Chimie": [ 
+            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
         ]
     },
-    "Science_de_la_Vie_et_de_la_Terre": {
-        "Génétique": [
-            { name: "Phénotype", file: "Phénotype.txt" }
+    "Science-de-la-Vie-et-de-la-Terre": { 
+        "Biologie": [ 
+            { name: "L'Hérédité (Génétique)", file: "L'Hérédité (Génétique).txt" },
+            { name: "Le programme génétique", file: "Le programme génétique.txt" }
         ]
     },
-    "Anglais": {
-        "Pays": [
-            { name: "Les pays anglophones", file: "Les pays anglophones.txt" }
+    "Musique": {
+        "Histoire": [ 
+            { name: "La Chanson Engagée", file: "Chanson engagée.txt" } 
         ]
     },
-    // CORRIGÉ : Assurez-vous que le nom du dossier est en minuscules (musique)
-    "musique": { 
-        "Leçons": [
-            { name: "Chanson engagée", file: "Chanson engagée.txt" }
-        ]
-    },
-    // CORRIGÉ : Assurez-vous que le nom du dossier est en minuscules (technologie)
-    "technologie": {
-        "Leçons": [
-            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" }
+    "Technologie": {
+        "Systèmes": [ 
+            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" } 
         ]
     }
-    // Fin de la structure
 };
 
 // --- FONCTIONS DE MISE EN FORME ---
