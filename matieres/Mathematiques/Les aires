@@ -1,0 +1,13 @@
+Figure Formule dans vos notes Formule Corrigée (Aire et Périmètre)
+Carré (c = côté) \text{P} = \text{c} \times \text{c} \quad \text{A} = \text{c} \times \text{c} \text{P} = 4 \times \text{c} (Périmètre) \quad \text{A} = \text{c} \times \text{c} (Aire)
+Rectangle (\text{L} = longueur, \text{l} = largeur) \text{P} = 2 \times \text{L} + 2 \times \text{l} \quad \text{A} = (\text{L} + \text{l}) \times 2 \quad \text{A} = \text{L} \times \text{l} \text{P} = 2 \times (\text{L} + \text{l}) (Périmètre) \quad \text{A} = \text{L} \times \text{l} (Aire)
+Disque (\text{D} = diamètre, \text{R} = rayon) \text{P} = \text{D} \times \pi \quad \text{A} = \text{R} \times \text{R} \times \pi \text{P} = \text{D} \times \pi ou 2 \times \pi \times \text{R} (Circonférence) \quad \text{A} = \pi \times \text{R}^2 (Aire)
+Triangle (base, hauteur) \text{A} = \frac{\text{base} \times \text{hauteur}}{2} A est correcte. \quad \text{A} = \frac{\text{base} \times \text{hauteur}}{2}
+Triangle rectangle (\text{L}, \text{l} = côtés de l'angle droit) \text{A} = \frac{\text{L} \times \text{l}}{2} A est correcte. \quad \text{A} = \frac{\text{L} \times \text{l}}{2}
+
+Solide (Volume V) Formule dans vos notes Formule Corrigée
+Cube (\text{c} = côté) \text{c} \times \text{c} \times \text{c} \text{V} = \text{c}^3
+Pavé droit (ou Parallélépipède rectangle) \text{L} \times \text{l} \times \text{h} \text{V} = \text{L} \times \text{l} \times \text{h}
+Cylindre \text{Aire base} \times \text{hauteur} \text{V} = \text{Aire de la base} \times \text{h} (où \text{Aire base} = \pi \times \text{R}^2)
+Prisme \text{Aire base} \times \text{hauteur} \text{V} = \text{Aire de la base} \times \text{h}
+Pyramide \frac{\text{Aire base} \times \text{hauteur}}{3} \text{V} = \frac{\text{Aire de la base} \times \text{h}}{3}
