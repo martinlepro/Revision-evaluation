@@ -298,22 +298,29 @@ async function startQuiz(quizType = 'mixte') {
     
     // Boucle pour appeler l'IA le nombre de fois choisi
     for (let i = 0; i < questionsToGenerate; i++) {
+        
+        // --- NOUVEAU : GESTION DU DÉLAI ET DU STATUT ---
+        if (i === 0) {
+            // Pause initiale de 1.5s pour donner le temps à Render de "sortir de veille" (cold start)
+            feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
+            await delay(1500); 
+            feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question 1/${questionsToGenerate}...</p>`;
+            
+        } else {
+            // Pause de 21s pour le Rate Limit, à partir de la 2ème question
+            feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 21 secondes avant la prochaine question...</p>`;
+            console.warn("Pause de 21 secondes pour respecter la limite de débit OpenAI.");
+            await delay(21000);
+            feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
+        }
+        // ------------------------------------------------
+
         // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS (loadedContents)
         const randomIndex = Math.floor(Math.random() * loadedContents.length);
         const source = loadedContents[randomIndex];
 
         // Appelle la génération pour ce contenu
         await generateRandomQuestionFromContent(source.content, quizType, source.name);
-        
-        // --- NOUVEAU : AJOUT DU DÉLAI DE 21 SECONDES POUR LE RATE LIMIT ---
-        // Le délai est ignoré pour la dernière question.
-        if (i < questionsToGenerate - 1) {
-             feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 21 secondes avant la prochaine question...</p>`;
-             console.warn("Pause de 21 secondes pour respecter la limite de débit OpenAI.");
-             await delay(21000); // 21 000 millisecondes = 21 secondes
-             feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 2}/${questionsToGenerate}...</p>`;
-        }
-        // ------------------------------------------------------------------
     }
     
     // ----------------------------------------------------------------------
