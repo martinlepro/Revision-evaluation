@@ -228,77 +228,75 @@ function parseMarkdown(text) {
 // --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
 
 async function startQuiz(quizType = 'mixte') {
+    // 1. INITIALISATION ET VÉRIFICATION (DÉPLACÉE AU DÉBUT)
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet de révision.");
         return;
     }
-    // ------------------------------------------------------------------
-    // AJOUTER LE MESSAGE DE CHARGEMENT IMMÉDIATEMENT APRÈS LA VÉRIFICATION !
-    // ------------------------------------------------------------------
-    document.getElementById('quiz-view').style.display = 'block';
-    document.getElementById('selection-view').style.display = 'none';
-
-    document.getElementById('question-container').innerHTML = `
-        <h2 style="color: #007bff;">⏳ Génération du Quiz en cours...</h2>
-        <p class="loading-message">Le serveur d'entraînement (Render) est en train de se réveiller et de générer les questions. Veuillez patienter (jusqu'à 60 secondes la première fois).</p>
-    `;
-    // ------------------------------------------------------------------
     
-    // ------------------------------------------------------------------
-    // NOUVELLE LOGIQUE : CHOISIR UN NOMBRE ALÉATOIRE DE QUESTIONS
-    // ------------------------------------------------------------------
-    
-    // 1. Détermine le nombre de questions à générer (entre MIN et MAX)
-    // Exemple : si MIN=5 et MAX=10
-    // Math.random() * (10 - 5 + 1) donnera un nombre entre 0 et 6.
-    // Ajouter 5 donne un nombre entre 5 et 11. Math.floor l'arrondit à 5, 6, 7, 8, 9, ou 10.
-    const questionsToGenerate = Math.floor(Math.random() * (MAX_QUESTIONS - MIN_QUESTIONS + 1)) + MIN_QUESTIONS;
-    
-    console.log(`Tentative de générer ${questionsToGenerate} questions sur ${selectedItems.length} sujets sélectionnés.`);
-
-    // 2. Boucle pour appeler l'IA le nombre de fois choisi
-    for (let i = 0; i < questionsToGenerate; i++) {
-        // Sélectionne un sujet aléatoirement (important si plusieurs sujets sont cochés)
-        const randomIndex = Math.floor(Math.random() * selectedItems.length);
-        const item = selectedItems[randomIndex];
-
-        // Appelle la génération pour un sujet aléatoire.
-        await generateRandomQuestionFromContent(item.content, quizType, item.name);
-    }
-    if (isQuizRunning) return;
-    isQuizRunning = true;
-
-    // Réinitialisation du quiz
+    // Réinitialisation du quiz (DOIT ÊTRE AU DÉBUT pour effacer l'ancienne session)
     currentQuizData = [];
     currentQuestionIndex = 0;
     userScore = 0;
     totalQuizPoints = 0;
+    isQuizRunning = true; // Flag d'état
     
-    document.getElementById('selection-view').style.display = 'none';
+    // 2. MESSAGE DE CHARGEMENT
     document.getElementById('quiz-view').style.display = 'block';
-    const feedbackDiv = document.getElementById('ai-generation-feedback');
-    feedbackDiv.innerHTML = '<p class="info">Génération du quiz en cours, veuillez patienter...</p>';
+    document.getElementById('selection-view').style.display = 'none';
 
+    document.getElementById('question-container').innerHTML = `
+        <h2 style="color: #007bff;">⏳ Préparation et Génération du Quiz...</h2>
+        <p class="loading-message">Chargement du contenu des leçons et contact avec le serveur IA.</p>
+    `;
+    const feedbackDiv = document.getElementById('ai-generation-feedback');
+    feedbackDiv.innerHTML = '<p class="info">Chargement des fichiers...</p>'; 
+
+    // 3. ÉTAPE PRÉPARATOIRE : CHARGEMENT DE TOUT LE CONTENU SÉLECTIONNÉ
+    const loadedContents = [];
     for (const item of selectedItems) {
         if (quizType === 'dictation') {
-            await generateDictationQuestion(item.path);
+            await generateDictationQuestion(item.path); // Gestion spéciale de la dictée
             break; 
         }
-
+        
         const content = await fetchContent(item.path); 
         if (content) {
-            console.log(`Contenu de ${item.name} chargé. Génération de question de type ${quizType}...`);
-            await generateRandomQuestionFromContent(content, quizType, item.name);
+            loadedContents.push({ content: content, name: item.name });
+            feedbackDiv.innerHTML = `<p class="info">Fichier pour **${item.name}** chargé.</p>`;
         }
     }
     
+    if (loadedContents.length === 0 && quizType !== 'dictation') {
+        isQuizRunning = false;
+        alert("Aucun contenu de révision n'a pu être chargé. Vérifiez vos fichiers.");
+        document.getElementById('quiz-view').style.display = 'none';
+        document.getElementById('selection-view').style.display = 'block';
+        return;
+    }
+    
+    // 4. BOUCLE DE GÉNÉRATION ALÉATOIRE (5 à 10 questions)
+    const questionsToGenerate = Math.floor(Math.random() * (MAX_QUESTIONS - MIN_QUESTIONS + 1)) + MIN_QUESTIONS;
+    feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer **${questionsToGenerate}** questions...</p>`;
+    
+    // On boucle le nombre de fois requis
+    for (let i = 0; i < questionsToGenerate; i++) {
+        // Sélectionne un sujet aléatoirement parmi les contenus chargés
+        const randomIndex = Math.floor(Math.random() * loadedContents.length);
+        const source = loadedContents[randomIndex];
+
+        // Appelle la génération pour ce contenu aléatoire.
+        await generateRandomQuestionFromContent(source.content, quizType, source.name);
+    }
+    
+    // 5. FINALISATION
     isQuizRunning = false; 
     feedbackDiv.innerHTML = ''; 
 
     if (currentQuizData.length > 0) {
         displayCurrentQuestion();
     } else if (quizType !== 'dictation') {
-        alert("Aucune question n'a pu être générée. Vérifiez le serveur et le format JSON.");
+        alert("Aucune question n'a pu être générée. Vérifiez le serveur IA et le format JSON.");
         document.getElementById('quiz-view').style.display = 'none';
         document.getElementById('selection-view').style.display = 'block';
     }
