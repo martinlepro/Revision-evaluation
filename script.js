@@ -227,6 +227,17 @@ async function startQuiz(quizType = 'mixte') {
         alert("Veuillez sélectionner au moins un sujet de révision.");
         return;
     }
+    // ------------------------------------------------------------------
+    // AJOUTER LE MESSAGE DE CHARGEMENT IMMÉDIATEMENT APRÈS LA VÉRIFICATION !
+    // ------------------------------------------------------------------
+    document.getElementById('quiz-view').style.display = 'block';
+    document.getElementById('selection-view').style.display = 'none';
+
+    document.getElementById('question-container').innerHTML = `
+        <h2 style="color: #007bff;">⏳ Génération du Quiz en cours...</h2>
+        <p class="loading-message">Le serveur d'entraînement (Render) est en train de se réveiller et de générer les questions. Veuillez patienter (jusqu'à 60 secondes la première fois).</p>
+    `;
+    // ------------------------------------------------------------------
     if (isQuizRunning) return;
     isQuizRunning = true;
 
