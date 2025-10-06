@@ -226,8 +226,6 @@ function parseMarkdown(text) {
 
 
 // --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
-
-async function startQuiz(quizType = 'mixte') {
 async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
     // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
