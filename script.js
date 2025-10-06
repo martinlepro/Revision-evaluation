@@ -63,6 +63,11 @@ const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
 const GENERATION_API_URL = `${BASE_API_URL}/generation`;
 const TTS_API_URL = `${BASE_API_URL}/tts`; // La route TTS est conservée
+// --- NOUVELLES CONSTANTES POUR LE SCORING ---
+const TARGET_QUIZ_POINTS = 20;
+const MIN_QUESTIONS = 5;
+const MAX_QUESTIONS = 10;
+// ---------------------------------------------
 
 console.log(`URL de l'API Backend: ${BASE_API_URL}`);
 
