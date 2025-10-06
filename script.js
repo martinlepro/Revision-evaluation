@@ -67,52 +67,71 @@ const TTS_API_URL = `${BASE_API_URL}/tts`; // La route TTS est conservée
 console.log(`URL de l'API Backend: ${BASE_API_URL}`);
 
 // --- Structure des matières (Catalogue des leçons) ---
-// (Même structure qu'avant)
+// --- Gestion de la structure des matières (Catalogue des leçons) ---
+// Note : Le 'type' ici est un 'type de leçon', et non le type de question générée.
+
 const STRUCTURE = {
     "Mathematiques": {
-        "G1_STATISTIQUES": [
-            { name: "Triangles et Proportionnalité", file: "Triangles et proportionnalité.txt" }
+        "Nombres_Premiers": [
+            { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" } // Leçon support
         ],
         "T1_STATISTIQUES": [
-            { name: "Statistiques", file: "Statistiques.txt" }
+            { name: "Statistiques", file: "Mathematiques/T1_STATISTIQUES/Statistiques.txt", type: "qcm" } 
+        ],
+        "G1_Triangles et proportionnalité": [
+            { name: "Théorème de Thalès", file: "Mathematiques/G1-Triangles et proportionnalité/Triangles et proportionnalité.txt", type: "qcm" } 
+        ],
+        "GEOMETRIE_LES_AIRES": [
+            { name: "Formules d'Aires et Périmètres", file: "Mathematiques/Les aires.txt", type: "qcm" } 
         ]
     },
     "Francais": {
-        "Leçons": [
-            { name: "Autoportrait", file: "Autoportrait.txt" }
-        ]
-    },
-    "Histoire_Geo": {
-        "Géographie": [
-            { name: "Les aires urbaines", file: "Les aires urbaines.txt" }
+        "Grammaire": [
+            { name: "Les classes grammaticales", file: "Francais/Grammaire/Les classes grammaticales.txt", type: "qcm" },
+            { name: "L'accord du verbe et du sujet", file: "Francais/Grammaire/L'accord du verbe et du sujet .txt", type: "qcm" }
         ],
-        "Paragraphe": [
-            { name: "Révolution Française (Sujet 1)", file: "La_Revolution_Francaise/Paragraphe_Argumente_1.json", type: "paragraphe" }
+        "Analyse": [
+            { name: "Analyse d'un texte", file: "Francais/Analyse/Analyse d'un texte .txt", type: "paragraphe" },
+            { name: "Autoportrait", file: "Francais/Analyse/Autoportrait.txt", type: "paragraphe" } 
         ]
     },
-    "Physique_Chimie": {
-        "Atome & Périodique": [
-            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" }
+    "Histoire-Geo": {
+        "Histoire": [
+            { name: "1er Guerre Mondiale", file: "Histoire_Geo/Histoire/1er-Guerre-Mondiale.txt", type: "paragraphe" }
+        ],
+        "Geographie": [
+            { name: "Les aires urbaines", file: "Histoire_Geo/Geographie/Les aires urbaines.txt", type: "paragraphe" } 
         ]
     },
-    "Science_de_la_Vie_et_de_la_Terre": {
-        "Génétique": [
-            { name: "Phénotype", file: "Phénotype.txt" }
+    "Physique-Chimie": {
+        "Chimie": [
+            { name: "Atomes et Tableau Périodique", file: "Physique-Chimie/Chimie/Atomes et Tableau Périodique.txt", type: "qcm" }
+        ]
+    },
+    "Science-de-la-Vie-et-de-la-Terre": {
+        "Biologie": [
+            { name: "Le programme génétique", file: "Science-de-la-Vie-et-de-la-Terre/Biologie/Le programme génétique.txt", type: "qcm" },
+            { name: "L'Hérédité (Génétique)", file: "Science-de-la-Vie-et-de-la-Terre/Biologie/L'Hérédité (Génétique).txt", type: "qcm" }
+        ]
+    },
+    "Technologie": {
+        "Systèmes": [
+            { name: "Les systèmes automatisés", file: "Technologie/Systèmes/Les systèmes automatisés.txt", type: "qcm" }
         ]
     },
     "Anglais": {
-        "Pays": [
-            { name: "Les pays anglophones", file: "Les pays anglophones.txt" }
+        "Culture": [
+            { name: "Les pays anglophones", file: "Anglais/Culture/Les pays anglophones.txt", type: "qcm" }
         ]
     },
-    "musique": { 
-        "Leçons": [
-            { name: "Chanson engagée", file: "Chanson engagée.txt" }
+    "Musique": {
+        "Histoire": [
+            { name: "La Chanson Engagée", file: "musique/Histoire/Chanson engagée.txt", type: "paragraphe" }
         ]
     },
-    "technologie": {
-        "Leçons": [
-            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" }
+    "Arts-Plastiques": {
+        "ANALYSE_OEUVRE": [
+            { name: "Méthode pour analyser une œuvre d'art", file: "Art-Plastiques/Méthode pour analyser une œuvre d'art.txt", type: "paragraphe" }
         ]
     }
 };
