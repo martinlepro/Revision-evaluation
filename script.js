@@ -229,7 +229,7 @@ function parseMarkdown(text) {
 
 async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
-    // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION (DOIT ÊTRE AU DÉBUT)
+    // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION (DOIT TOUJOURS ÊTRE LA PREMIÈRE)
     // ----------------------------------------------------------------------
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet de révision.");
@@ -256,7 +256,7 @@ async function startQuiz(quizType = 'mixte') {
 
     
     // ----------------------------------------------------------------------
-    // ÉTAPE 2 : PRÉPARATION (CHARGEMENT DU CONTENU)
+    // ÉTAPE 2 : PRÉPARATION (CHARGEMENT DE TOUT LE CONTENU AVANT LA GÉNÉRATION)
     // ----------------------------------------------------------------------
     const loadedContents = [];
     for (const item of selectedItems) {
@@ -275,13 +275,12 @@ async function startQuiz(quizType = 'mixte') {
     
     if (loadedContents.length === 0 && quizType !== 'dictation') {
         isQuizRunning = false;
-        alert("Aucun contenu de révision n'a pu être chargé.");
+        alert("Aucun contenu de révision n'a pu être chargé. Vérifiez vos fichiers.");
         document.getElementById('quiz-view').style.display = 'none';
         document.getElementById('selection-view').style.display = 'block';
         return;
     }
     
-    // Gestion du cas 'dictation' pour sortir si nécessaire
     if (quizType === 'dictation') {
         feedbackDiv.innerHTML = '';
         isQuizRunning = false;
@@ -300,9 +299,9 @@ async function startQuiz(quizType = 'mixte') {
     
     // Boucle pour appeler l'IA le nombre de fois choisi
     for (let i = 0; i < questionsToGenerate; i++) {
-        // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS
+        // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS (loadedContents)
         const randomIndex = Math.floor(Math.random() * loadedContents.length);
-        const source = loadedContents[randomIndex]; // Utilise le contenu déjà chargé
+        const source = loadedContents[randomIndex];
 
         // Appelle la génération pour ce contenu
         await generateRandomQuestionFromContent(source.content, quizType, source.name);
