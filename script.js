@@ -229,14 +229,14 @@ function parseMarkdown(text) {
 
 async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
-    // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
+    // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION (DOIT ÊTRE AU DÉBUT)
     // ----------------------------------------------------------------------
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet de révision.");
         return;
     }
     
-    // Réinitialisation au TOUT début pour effacer la session précédente
+    // Réinitialisation de toutes les données de la session précédente
     currentQuizData = [];
     currentQuestionIndex = 0;
     userScore = 0;
@@ -256,16 +256,17 @@ async function startQuiz(quizType = 'mixte') {
 
     
     // ----------------------------------------------------------------------
-    // ÉTAPE 2 : PRÉPARATION (CHARGEMENT DU CONTENU AVANT TOUTE GÉNÉRATION)
+    // ÉTAPE 2 : PRÉPARATION (CHARGEMENT DU CONTENU)
     // ----------------------------------------------------------------------
     const loadedContents = [];
     for (const item of selectedItems) {
         if (quizType === 'dictation') {
             await generateDictationQuestion(item.path); 
-            break; // La dictée est un cas spécial qui s'arrête là
+            break; 
         }
         
-        const content = await fetchContent(item.path); // Le contenu est chargé ici
+        // On charge le contenu de chaque fichier sélectionné
+        const content = await fetchContent(item.path); 
         if (content) {
             loadedContents.push({ content: content, name: item.name });
             feedbackDiv.innerHTML = `<p class="info">Fichier pour **${item.name}** chargé.</p>`;
@@ -274,13 +275,13 @@ async function startQuiz(quizType = 'mixte') {
     
     if (loadedContents.length === 0 && quizType !== 'dictation') {
         isQuizRunning = false;
-        alert("Aucun contenu de révision n'a pu être chargé. Vérifiez vos fichiers.");
+        alert("Aucun contenu de révision n'a pu être chargé.");
         document.getElementById('quiz-view').style.display = 'none';
         document.getElementById('selection-view').style.display = 'block';
         return;
     }
     
-    // Si c'était une dictée, on passe directement à l'affichage
+    // Gestion du cas 'dictation' pour sortir si nécessaire
     if (quizType === 'dictation') {
         feedbackDiv.innerHTML = '';
         isQuizRunning = false;
@@ -321,7 +322,6 @@ async function startQuiz(quizType = 'mixte') {
         document.getElementById('selection-view').style.display = 'block';
     }
 }
-
 async function generateRandomQuestionFromContent(content, forcedType, sourceName) {
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
     generationFeedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer une question pour **${sourceName}**...</p>`;
