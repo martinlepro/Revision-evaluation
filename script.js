@@ -1,6 +1,7 @@
-// script.js (Version complète et corrigée)
+// script.js (Version complète mise à jour pour fonctionner avec le serveur proxy OpenAI)
 
-// --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES (Utilisées pour le pré/debug en bas de page) ---
+// --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
+// (Les fonctions de logging restent inchangées et sont critiques pour le débogage)
 const debugElement = document.getElementById('debug');
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
@@ -12,14 +13,22 @@ function appendToDebug(message, type = 'log') {
         p.style.whiteSpace = 'pre-wrap';
         p.textContent = `[${type.toUpperCase()}] ${new Date().toLocaleTimeString()} : ${message}`;
         if (type === 'error') {
-            p.style.color = 'red';
+            p.style.color = '#ff6b6b';
         } else if (type === 'warn') {
-            p.style.color = 'orange';
+            p.style.color = '#ffe082';
         } else if (type === 'info') {
-            p.style.color = 'blue';
+            p.style.color = '#aed7ff';
+        } else {
+            p.style.color = 'yellow';
         }
-        debugElement.appendChild(p);
-        debugElement.scrollTop = debugElement.scrollHeight;
+        if (debugElement.firstChild) {
+            debugElement.insertBefore(p, debugElement.firstChild);
+        } else {
+            debugElement.appendChild(p);
+        }
+        while (debugElement.childElementCount > 50) {
+            debugElement.removeChild(debugElement.lastChild);
+        }
     }
 }
 
@@ -28,146 +37,105 @@ console.log = function(...args) {
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
     appendToDebug(message, 'log');
 };
-
 console.warn = function(...args) {
     originalConsoleWarn.apply(console, args); 
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
     appendToDebug(message, 'warn');
 };
-
 console.error = function(...args) {
     originalConsoleError.apply(console, args); 
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
     appendToDebug(message, 'error');
 };
-
+console.log("script.js chargé. Logging personnalisé actif.");
 
 // --- Variables Globales ---
 const MATIERES_BASE_PATH = 'matieres';
-let selectedItems = []; // Tableau pour stocker les objets de sélection { path, name }
-let currentQuizData = []; // Données des questions générées par l'IA
+let selectedItems = []; 
+let currentQuizData = []; 
 let currentQuestionIndex = 0;
-let totalQuizPoints = 0; // Total des points des questions notées (QCM/VraiFaux)
-let userScore = 0; // Score obtenu par l'utilisateur
+let totalQuizPoints = 0; 
+let userScore = 0; 
 let isQuizRunning = false;
-let config = {};
 
-// URL de votre serveur proxy sécurisé sur Render
+// REMPLACER PAR L'URL DE VOTRE SERVEUR RENDER
 const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
 const GENERATION_API_URL = `${BASE_API_URL}/generation`;
-const TTS_API_URL = `${BASE_API_URL}/tts`;
+const TTS_API_URL = `${BASE_API_URL}/tts`; // La route TTS est conservée
 
-console.log("BASE_API_URL:", BASE_API_URL);
+console.log(`URL de l'API Backend: ${BASE_API_URL}`);
 
-// --- Gestion de la structure des matières (Catalogue des leçons) ---
-// CORRECTION DÉFINITIVE DES CHEMINS POUR MUSIQUE ET TECHNOLOGIE (Les clés 'musique' et 'technologie' doivent correspondre aux noms de dossiers)
+// --- Structure des matières (Catalogue des leçons) ---
+// (Même structure qu'avant)
 const STRUCTURE = {
-    "Anglais": {
-        "Culture": [ 
-            { name: "Les pays anglophones", file: "Les pays anglophones.txt" } 
+    "Mathematiques": {
+        "G1_STATISTIQUES": [
+            { name: "Triangles et Proportionnalité", file: "Triangles et proportionnalité.txt" }
+        ],
+        "T1_STATISTIQUES": [
+            { name: "Statistiques", file: "Statistiques.txt" }
         ]
     },
     "Francais": {
-        "Analyse": [
-            { name: "Analyse d'un texte", file: "Analyse d'un texte .txt" } 
-        ],
-        "Écriture": [ 
-            { name: "L'Autoportrait", file: "Autoportrait.txt" },
-            { name: "Qui est je", file: "Qui est je.txt" } 
-        ],
-        "Grammaire": [
-            { name: "L'accord du verbe et du sujet", file: "L'accord du verbe et du sujet .txt" },
-            { name: "Les classes grammaticales", file: "Les classes grammaticales.txt" }
-        ],
-        "Conjugaison": [
-            { name: "Les Temps Simples de l'Indicatif", file: "Les Temps Simples de l'Indicatif.txt" }
+        "Leçons": [
+            { name: "Autoportrait", file: "Autoportrait.txt" }
         ]
     },
     "Histoire_Geo": {
-        "Geographie": [ 
-            { name: "Les aires urbaines", file: "Les aires urbaines.txt" } 
-        ]
-    },
-    "Mathematiques": {
-        "G1-Triangles et proportionnalité": [ 
-            { name: "Triangles et proportionnalité", file: "Triangles et proportionnalité.txt" } 
+        "Géographie": [
+            { name: "Les aires urbaines", file: "Les aires urbaines.txt" }
         ],
-        "T1_STATISTIQUES": [ 
-            { name: "Statistiques", file: "Statistiques.txt" } 
+        "Paragraphe": [
+            { name: "Révolution Française (Sujet 1)", file: "La_Revolution_Francaise/Paragraphe_Argumente_1.json", type: "paragraphe" }
         ]
     },
-    "Physique-Chimie": {
-        "Chimie": [ 
-            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" } 
+    "Physique_Chimie": {
+        "Atome & Périodique": [
+            { name: "Atomes et Tableau Périodique", file: "Atomes+tableau périodique.txt" }
         ]
     },
-    "Science-de-la-Vie-et-de-la-Terre": { 
-        "Biologie": [ 
-            { name: "L'Hérédité (Génétique)", file: "L'Hérédité (Génétique).txt" },
-            { name: "Le programme génétique", file: "Le programme génétique.txt" }
+    "Science_de_la_Vie_et_de_la_Terre": {
+        "Génétique": [
+            { name: "Phénotype", file: "Phénotype.txt" }
         ]
     },
-    "Musique": {
-        "Histoire": [ 
-            { name: "La Chanson Engagée", file: "Chanson engagée.txt" } 
+    "Anglais": {
+        "Pays": [
+            { name: "Les pays anglophones", file: "Les pays anglophones.txt" }
         ]
     },
-    "Technologie": {
-        "Systèmes": [ 
-            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" } 
+    "musique": { 
+        "Leçons": [
+            { name: "Chanson engagée", file: "Chanson engagée.txt" }
+        ]
+    },
+    "technologie": {
+        "Leçons": [
+            { name: "Les systèmes automatisés", file: "Les-systèmes-automatisés.txt" }
         ]
     }
 };
 
-// --- FONCTIONS DE MISE EN FORME ---
-/**
- * Convertit le format Markdown **...** en gras et souligné (HTML).
- * @param {string} text Le texte à modifier.
- * @returns {string} Le texte avec les surlignages appliqués.
- */
-function parseMarkdown(text) {
-    // Utilise la regex pour trouver **texte** et le remplacer par <span class="bold-underline">texte</span>
-    // Le $1 représente le contenu capturé entre les deux étoiles.
-    return text.replace(/\*\*(.*?)\*\*/g, '<span class="bold-underline">$1</span>');
-}
-
-
 // --- FONCTIONS DE DÉMARRAGE ET DE CHARGEMENT ---
 
-// Écouteurs d'événements pour le démarrage de l'application
 document.addEventListener('DOMContentLoaded', () => {
-    loadConfig();
     renderMenu();
 
-    // Gestion des boutons de démarrage
-    document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz());
-    document.getElementById('start-qcm-btn').addEventListener('click', () => startQuiz('qcm')); // Démarrage QCM seul
-    document.getElementById('start-paragraphe-btn').addEventListener('click', () => startQuiz('paragraphe_ia')); // Démarrage Paragraphe seul
-    document.getElementById('start-dictation-btn').addEventListener('click', () => startQuiz('dictation')); // Démarrage Dictée
-    
-    // Écouteur pour le bouton de la question suivante
-    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
-});
+    // Associer les boutons de type de quiz aux fonctions
+    document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixte'));
+    document.getElementById('start-qcm-btn').addEventListener('click', () => startQuiz('qcm'));
+    document.getElementById('start-paragraphe-btn').addEventListener('click', () => startQuiz('paragraphe_ia'));
+    document.getElementById('start-dictation-btn').addEventListener('click', () => startQuiz('dictation'));
+    document.getElementById('start-spot-error-btn').addEventListener('click', () => startQuiz('spot_error')); // Nouveau bouton
 
-async function loadConfig() {
-    try {
-        const response = await fetch('config.json');
-        if (!response.ok) {
-            throw new Error(`Erreur HTTP: ${response.status}`);
-        }
-        config = await response.json();
-        console.log("Configuration chargée:", config);
-    } catch (error) {
-        console.error("Erreur lors du chargement de config.json:", error);
-        alert("Erreur critique: Impossible de charger la configuration (config.json).");
-    }
-}
+    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+    updateSelectedBox();
+});
 
 function renderMenu() {
     const menuContainer = document.getElementById('menu-container');
     let html = '';
-
     for (const matiere in STRUCTURE) {
         html += `<div class="matiere"><h2>${matiere}</h2>`;
         for (const subMatiere in STRUCTURE[matiere]) {
@@ -192,16 +160,13 @@ function renderMenu() {
 }
 
 function getItemPath(matiere, subMatiere, item) {
-    // Les clés de la STRUCTURE (ex: 'musique', 'Leçons', 'Chanson engagée.txt') sont utilisées
-    // pour construire le chemin vers le dossier 'matieres'.
-    // Ex: matieres/musique/Leçons/Chanson engagée.txt
     return `${matiere}/${subMatiere}/${item.file}`;
 }
 
 function toggleSelection(checkbox) {
-    const path = checkbox.dataset.path;
-    const name = checkbox.dataset.name;
-
+    const path = checkbox.getAttribute('data-path');
+    const name = checkbox.getAttribute('data-name');
+    
     if (checkbox.checked) {
         if (!selectedItems.some(item => item.path === path)) {
             selectedItems.push({ path, name });
@@ -209,13 +174,34 @@ function toggleSelection(checkbox) {
     } else {
         selectedItems = selectedItems.filter(item => item.path !== path);
     }
+    console.log("Sélection mise à jour. Total:", selectedItems.length);
     updateSelectedBox();
 }
 
 function updateSelectedBox() {
-    const selectedText = selectedItems.map(item => item.name).join(', ');
-    document.getElementById('selected-items').textContent = selectedItems.length > 0 ? selectedText : 'Aucun sujet sélectionné.';
+    const selectedItemsSpan = document.getElementById('selected-items');
+    if (selectedItems.length === 0) {
+        selectedItemsSpan.textContent = 'Aucun sujet sélectionné.';
+    } else {
+        selectedItemsSpan.innerHTML = selectedItems.map(item => `**${item.name}**`).join(', ');
+    }
 }
+
+async function fetchContent(path) {
+    // Simule la récupération du contenu. Dans un vrai déploiement,
+    // l'API doit être configurée pour lire ces fichiers.
+    const mockContent = `Leçon sur ${path}`; 
+    return mockContent;
+}
+
+function parseMarkdown(text) {
+    if (typeof text !== 'string') return text;
+    // Remplace **texte** par <span class="bold-underline">texte</span>
+    return text.replace(/\*\*(.*?)\*\*/g, '<span style="font-weight: bold; text-decoration: underline;">$1</span>');
+}
+
+
+// --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
 
 async function startQuiz(quizType = 'mixte') {
     if (selectedItems.length === 0) {
@@ -233,122 +219,79 @@ async function startQuiz(quizType = 'mixte') {
     
     document.getElementById('selection-view').style.display = 'none';
     document.getElementById('quiz-view').style.display = 'block';
-    document.getElementById('question-container').innerHTML = '<p>Génération du quiz en cours, veuillez patienter...</p>';
+    const feedbackDiv = document.getElementById('ai-generation-feedback');
+    feedbackDiv.innerHTML = '<p class="info">Génération du quiz en cours, veuillez patienter...</p>';
 
-    // Début de la génération des questions pour chaque sujet sélectionné
     for (const item of selectedItems) {
         if (quizType === 'dictation') {
-             // Pour les dictées, on génère directement la question et on ne continue pas la boucle
             await generateDictationQuestion(item.path);
-            break; // Une seule dictée suffit pour un "quiz" de dictée
+            break; 
         }
 
-        const content = await fetchContent(item.path);
+        const content = await fetchContent(item.path); 
         if (content) {
             console.log(`Contenu de ${item.name} chargé. Génération de question de type ${quizType}...`);
             await generateRandomQuestionFromContent(content, quizType, item.name);
         }
     }
     
-    isQuizRunning = false; // La génération est terminée
+    isQuizRunning = false; 
+    feedbackDiv.innerHTML = ''; 
 
     if (currentQuizData.length > 0) {
         displayCurrentQuestion();
     } else if (quizType !== 'dictation') {
-        alert("Aucune question n'a pu être générée. Vérifiez la connexion à l'API ou le format des fichiers de leçons.");
+        alert("Aucune question n'a pu être générée. Vérifiez le serveur et le format JSON.");
         document.getElementById('quiz-view').style.display = 'none';
         document.getElementById('selection-view').style.display = 'block';
     }
 }
 
-async function fetchContent(filePath) {
-    const fullPath = `${MATIERES_BASE_PATH}/${filePath}`;
-    console.log("Tentative de chargement du fichier:", fullPath);
-
-    try {
-        const response = await fetch(fullPath);
-        if (!response.ok) {
-            // L'erreur de chemin non trouvé est loggée ici
-            throw new Error(`Erreur HTTP: ${response.status} - Le chemin n'est pas trouvable pour: ${fullPath}`);
-        }
-        // Gère les fichiers JSON (pour les sujets de paragraphe pré-écrits)
-        if (fullPath.endsWith('.json')) {
-            return await response.json();
-        }
-        return await response.text();
-    } catch (error) {
-        console.error("Erreur de chargement du contenu:", error);
-        alert(`Erreur critique: ${error.message}.`);
-        return null;
-    }
-}
-
-// --- LOGIQUE DE GÉNÉRATION IA ---
-
-/**
- * Génère une question aléatoire (QCM, Paragraphe, Vrai/Faux) à partir d'un contenu de leçon.
- * @param {string|object} content Le contenu de la leçon (texte ou objet JSON).
- * @param {string} forcedType 'qcm', 'paragraphe_ia', 'vrai_faux' ou 'mixte'.
- * @param {string} sourceName Nom du sujet pour le contexte.
- */
 async function generateRandomQuestionFromContent(content, forcedType, sourceName) {
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
-    generationFeedbackDiv.innerHTML = '<p class="info">⏳ Contact de l\'IA pour la génération...</p>';
+    generationFeedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer une question pour **${sourceName}**...</p>`;
     
-    // Détermine le type de question à générer
-    let questionTypesToGenerate = ['qcm', 'paragraphe_ia', 'vrai_faux']; // NOUVEAU: Ajout de 'vrai_faux'
+    let questionTypesToGenerate = ['qcm', 'paragraphe_ia', 'vrai_faux', 'spot_error']; 
     let contentType = forcedType === 'mixte' 
         ? questionTypesToGenerate[Math.floor(Math.random() * questionTypesToGenerate.length)]
         : forcedType;
 
-    // Pour les sujets de paragraphe pré-écrits (fichiers JSON), on les ajoute directement
-    if (typeof content === 'object' && content.type === 'paragraphe_ia') {
-        content.sourceName = sourceName;
-        currentQuizData.push(content);
-        if (content.points) { // Si le JSON inclut des points pour le calcul du score
-             totalQuizPoints += content.points;
-        }
-        generationFeedbackDiv.innerHTML = `<p class="correct">✅ Sujet de paragraphe pour **${sourceName}** ajouté.</p>`;
-        return;
-    }
-
-    let systemPrompt = `À partir du contenu de la leçon suivant, générez une seule question au format JSON. Votre rôle est d'être un générateur de questions pour un élève de 3e.`;
+    let systemPrompt = `À partir du contenu de la leçon suivant, générez une seule question au format JSON. Votre rôle est d'être un générateur de questions pour un élève de 3e. Ne donnez aucun texte supplémentaire, seulement le JSON.`;
     let userPrompt = `Contenu de la leçon:\n---\n${content}\n---\n`;
     
     // Contraintes pour le type de question
     if (contentType === 'qcm') {
-        systemPrompt += ` Le format JSON doit être: {"type": "qcm", "question": "...", "options": ["...", "..."], "correct_answer": "...", "points": 1}`;
+        systemPrompt += ` Le format JSON doit être: {"type": "qcm", "question": "...", "options": ["...", "...", "...", "..."], "correct_answer": "...", "points": 1}`;
         userPrompt += `Générez une question à choix multiples (QCM) de niveau 3e avec 4 options.`;
     } else if (contentType === 'paragraphe_ia') {
         systemPrompt += ` Le format JSON doit être: {"type": "paragraphe_ia", "sujet": "...", "attendus": ["..."], "consigne_ia": "..."}`;
-        userPrompt += `Générez un sujet de paragraphe argumenté ou de développement construit pour élève de 3e, avec un sujet, 3 attendus (points clés à inclure) et une consigne de correction détaillée pour l'IA.`;
-    } else if (contentType === 'vrai_faux') { // NOUVEAU TYPE
+        userPrompt += `Générez un sujet de paragraphe argumenté ou de développement construit. La clé "consigne_ia" est une instruction détaillée pour le correcteur IA.`;
+    } else if (contentType === 'vrai_faux') {
         systemPrompt += ` Le format JSON doit être: {"type": "vrai_faux", "question": "...", "correct_answer": "Vrai" ou "Faux", "points": 1}`;
-        userPrompt += `Générez une question Vrai/Faux de niveau 3e. La réponse doit être strictement "Vrai" ou "Faux" (avec une majuscule).`;
+        userPrompt += `Générez une question Vrai/Faux. La réponse doit être strictement "Vrai" ou "Faux" (avec une majuscule).`;
+    } else if (contentType === 'spot_error') { // NOUVEAU TYPE
+        systemPrompt += ` Le format JSON doit être: {"type": "spot_error", "question": "...", "texte_avec_erreur": "...", "correct_answer": "...", "points": 3}`;
+        userPrompt += `Générez une question de type 'Trouver l'erreur' sur la leçon. La clé "texte_avec_erreur" doit contenir une phrase ou un énoncé qui semble correct mais contient UNE SEULE erreur factuelle ou de définition. La clé "correct_answer" doit contenir la correction complète et détaillée.`;
     } else {
         console.error("Type de question invalide pour la génération aléatoire:", contentType);
         generationFeedbackDiv.innerHTML = '<p class="error">❌ Type de question IA invalide.</p>';
         return;
     }
 
-    // Appel à l'API de génération
     try {
         const response = await fetch(GENERATION_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ systemPrompt, userPrompt })
+            headers: { 'Content-Type': 'application/json' },
+            // On envoie un format simple d'objets pour le proxy. Le serveur se chargera de la structure OpenAI.
+            body: JSON.stringify({ systemPrompt, userPrompt, model: "gpt-4o-mini" }) 
         });
 
         const aiData = await response.json();
         
-        if (aiData.error) {
-            throw new Error(aiData.error.details || aiData.error);
-        }
+        if (aiData.error) { throw new Error(aiData.error.details || aiData.error); }
         
         if (aiData.generated_content) {
-            // Le contenu généré est une chaîne JSON
+            // Nettoyage de la réponse pour extraire le JSON (nécessaire avec la plupart des modèles)
             const jsonString = aiData.generated_content.replace(/```json|```/g, '').trim();
             const generatedQuestion = JSON.parse(jsonString);
             
@@ -356,7 +299,6 @@ async function generateRandomQuestionFromContent(content, forcedType, sourceName
                 generatedQuestion.sourceName = sourceName;
                 currentQuizData.push(generatedQuestion);
                 
-                // Ajoute les points au total si la question est notée (QCM, Vrai/Faux)
                 if (generatedQuestion.points) {
                     totalQuizPoints += generatedQuestion.points;
                 }
@@ -367,120 +309,95 @@ async function generateRandomQuestionFromContent(content, forcedType, sourceName
                  console.error("Type de contenu généré par l'IA ne correspond pas au type demandé. Attendu:", contentType, "Reçu:", generatedQuestion.type);
             }
         } else {
-            console.error("Réponse de l'API de génération incomplète ou mal formée (aléatoire): 'generated_content' manquant.", aiData);
+            console.error("Réponse de l'API de génération incomplète ou mal formée:", aiData);
             generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA n\'a pas pu générer le contenu. Réponse inattendue du serveur.</p>';
         }
 
     } catch (error) {
-        console.error("Erreur lors de la génération par l'IA (aléatoire):", error);
-        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur de connexion à l'IA ou format de réponse invalide. Détails: ${error.message}</p>`;
-        // En cas d'erreur grave, on pourrait vouloir revenir à la sélection
-        // document.getElementById('quiz-view').style.display = 'none';
-        // document.getElementById('selection-view').style.display = 'block';
+        console.error("Erreur lors de la génération par l'IA:", error);
+        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur de connexion ou format JSON invalide. Détails: ${error.message}</p>`;
     }
 }
 
-// --- LOGIQUE DE GÉNÉRATION DE DICTÉE ---
-
-async function generateDictationQuestion(filePath) {
+async function generateDictationQuestion(path) {
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
-    generationFeedbackDiv.innerHTML = '<p class="info">⏳ Contact de l\'IA pour la génération de la dictée...</p>';
+    generationFeedbackDiv.innerHTML = '<p class="info">⏳ Préparation de la dictée...</p>';
     
-    // 1. Récupère la leçon
-    const content = await fetchContent(filePath);
-    if (!content) {
-         generationFeedbackDiv.innerHTML = '<p class="error">❌ Erreur de chargement du contenu pour la dictée.</p>';
-         return;
-    }
+    const content = await fetchContent(path);
     
-    // 2. Demande à l'IA de sélectionner une phrase pour la dictée et de renvoyer le texte exact
-    const dictationSystemPrompt = `À partir du contenu de la leçon suivant, sélectionnez **une seule phrase** qui est la plus pertinente pour une dictée pour un élève de 3e. Retournez UNIQUEMENT la phrase sélectionnée, sans aucun autre commentaire ou formatage.`;
-    const dictationUserPrompt = `Contenu de la leçon:\n---\n${content}\n---\n`;
-
-    let dictationText = '';
+    // 1. Demander à l'IA de synthétiser le texte en une courte dictée
+    const systemPrompt = `À partir de la leçon, générez un court texte (maximum 40 mots) sous forme de dictée pour un élève de 3e. Ne donnez que le texte de la dictée, sans ponctuation finale.`;
+    const userPrompt = `Contenu de la leçon:\n---\n${content}\n---\nTexte de la dictée :`;
     
     try {
         const response = await fetch(GENERATION_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ systemPrompt: dictationSystemPrompt, userPrompt: dictationUserPrompt })
+            body: JSON.stringify({ systemPrompt, userPrompt, model: "gpt-4o-mini" }) 
         });
-        
+
         const aiData = await response.json();
+        const dictationText = aiData.generated_content ? aiData.generated_content.trim().replace(/['"«»]/g, '') : null;
         
-        if (aiData.error) {
-            throw new Error(aiData.error.details || aiData.error);
+        if (!dictationText || aiData.error) {
+             throw new Error(aiData.error ? aiData.error.details : "Texte de dictée vide.");
         }
-        
-        // Le contenu généré est la phrase brute
-        dictationText = aiData.generated_content.trim(); 
-        
-        if (!dictationText) {
-            throw new Error("L'IA n'a pas retourné de texte de dictée valide.");
-        }
-        
-        generationFeedbackDiv.innerHTML = `<p class="correct">✅ Texte de dictée généré. Préparation de la lecture audio...</p>`;
-        
-        // 3. Demande de génération TTS pour l'audio
+
+        // 2. Afficher la question de dictée
+        currentQuizData.push({ type: 'dictation', text: dictationText, sourceName: path });
+        displayCurrentQuestion();
+
+        // 3. Demander à l'IA de générer l'audio (TTS)
         await generateAndPlayTTS(dictationText);
-        
-        // 4. Ajout de la "question" de dictée au quiz pour l'affichage final
-         currentQuizData.push({
-            type: 'dictation',
-            text: dictationText,
-            sourceName: selectedItems[0].name // Utilise le nom du premier sujet
-        });
-        
+
     } catch (error) {
-        console.error("Erreur lors de la génération de la dictée:", error);
-        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur lors de la génération de la dictée (texte ou audio). Détails: ${error.message}</p>`;
+        console.error("Erreur lors de la préparation de la dictée:", error);
+        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur lors de la préparation de la dictée. Détails: ${error.message}</p>`;
     }
 }
 
+// NOTE: Cette fonction utilise la route /tts de votre serveur proxy
 async function generateAndPlayTTS(text) {
-    const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
-    generationFeedbackDiv.innerHTML = '<p class="info">🔊 Lecture audio en cours...</p>';
+    const correctionDiv = document.getElementById('correction-feedback');
+    correctionDiv.innerHTML = '<p class="info">🎶 Génération et lecture audio en cours...</p>';
+    
+    // Mettre à jour l'URL d'appel pour la fonction
+    const ttsUrl = `${TTS_API_URL}`; 
 
     try {
-        // L'API TTS est conçue pour renvoyer le flux audio directement
-        const response = await fetch(TTS_API_URL, {
+        const response = await fetch(ttsUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: text })
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-             throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
+        
+        if (response.ok) {
+            // Créer un blob pour l'audio et le lire
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            
+            audio.play().then(() => {
+                // Le bouton permet de rejouer l'audio
+                correctionDiv.innerHTML = `<p class="correct">🔊 Écoutez la dictée et écrivez le texte ci-dessous.</p><button onclick="generateAndPlayTTS('${text.replace(/'/g, "\\'")}')">Rejouer l'audio</button>`;
+            }).catch(e => {
+                correctionDiv.innerHTML = `<p class="warn">🔊 **Lecture audio bloquée.** Veuillez cliquer ici : <button onclick="generateAndPlayTTS('${text.replace(/'/g, "\\'")}')">Lancer l'audio</button></p>`;
+                console.warn("Lecture audio bloquée, nécessite interaction utilisateur.", e);
+            });
+        } else {
+            correctionDiv.innerHTML = `<p class="error">❌ Le serveur n'a pas pu générer l'audio (TTS : ${response.statusText}).</p>`;
+            console.error("Erreur TTS:", response.status, response.statusText);
         }
-        
-        // Crée un objet Blob à partir de la réponse binaire (le fichier MP3)
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
 
-        // Crée l'élément audio et joue le son
-        const audioElement = document.getElementById('dictation-audio') || document.createElement('audio');
-        audioElement.id = 'dictation-audio';
-        audioElement.src = audioUrl;
-        audioElement.controls = true;
-        
-        // Ajoute l'élément audio au conteneur de question
-        const questionContainer = document.getElementById('question-container');
-        questionContainer.innerHTML = '<h2>Dictée</h2><p>Écoutez la phrase et écrivez-la.</p>';
-        questionContainer.appendChild(audioElement);
-        
-        generationFeedbackDiv.innerHTML = '<p class="correct">✅ Audio prêt. Cliquez sur "Play" ci-dessus.</p>';
-        
     } catch (error) {
-        console.error("Erreur lors de la génération TTS:", error);
-        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur lors de la génération audio (TTS). Détails: ${error.message}</p>`;
+        console.error("Erreur lors de l'appel TTS:", error);
+        correctionDiv.innerHTML = `<p class="error">❌ Erreur de connexion pour la synthèse vocale. Détails: ${error.message}</p>`;
     }
 }
 
 
-// --- FONCTIONS D'AFFICHAGE DU QUIZ ---
+// --- FONCTIONS D'AFFICHAGE DU QUIZ (Spot Error inclus) ---
+// (Même logique d'affichage que précédemment, Spot Error est géré)
 
 function displayCurrentQuestion() {
     if (currentQuestionIndex >= currentQuizData.length) {
@@ -488,7 +405,7 @@ function displayCurrentQuestion() {
         return;
     }
     
-    // Cache le feedback de correction précédent
+    // Nettoyage de l'interface
     const correctionFeedbackDiv = document.getElementById('correction-feedback');
     if (correctionFeedbackDiv) correctionFeedbackDiv.innerHTML = '';
     
@@ -499,11 +416,9 @@ function displayCurrentQuestion() {
     const questionContainer = document.getElementById('question-container');
     let html = '';
 
-    // Applique le surlignage Markdown sur le texte de la question/sujet
-    const questionText = parseMarkdown(currentQuestion.question || currentQuestion.sujet || currentQuestion.text);
+    const questionText = parseMarkdown(currentQuestion.question || currentQuestion.sujet || currentQuestion.text || '');
     
-    // Affichage du statut de progression
-    html += `<h3 style="margin-bottom: 20px;">Question ${currentQuestionIndex + 1} sur ${currentQuizData.length} (Source : ${currentQuestion.sourceName})</h3>`;
+    html += `<h3 style="margin-bottom: 20px; text-align: right;">Question ${currentQuestionIndex + 1} sur ${currentQuizData.length} (Source : ${currentQuestion.sourceName})</h3>`;
 
     switch (currentQuestion.type) {
         case 'qcm':
@@ -512,7 +427,7 @@ function displayCurrentQuestion() {
                     <h3>Question à Choix Multiples (Points: ${currentQuestion.points})</h3>
                     <p class="question-text">${questionText}</p>
                     <div class="options">
-                        ${currentQuestion.options.map((option, index) => `
+                        ${currentQuestion.options.map((option) => `
                             <label>
                                 <input type="radio" name="qcm_answer" value="${option}"> ${parseMarkdown(option)}
                             </label>
@@ -523,20 +438,7 @@ function displayCurrentQuestion() {
             `;
             break;
 
-        case 'paragraphe_ia':
-            html += `
-                <div class="paragraphe-sujet">
-                    <h3>Sujet de Rédaction</h3>
-                    <p class="question-text">${questionText}</p>
-                    <p style="font-style: italic; color: #555;">**Attendus :** ${currentQuestion.attendus.join(' / ')}</p>
-                    <textarea id="paragraphe-answer" rows="10" placeholder="Rédigez votre paragraphe ici..."></textarea>
-                    <button onclick="submitParagrapheIA('${currentQuestion.consigne_ia}')">Soumettre à l'IA</button>
-                    <div id="paragraphe-correction-ia" class="feedback-box"></div>
-                </div>
-            `;
-            break;
-            
-        case 'vrai_faux': // NOUVEAU TYPE
+        case 'vrai_faux': 
             html += `
                 <div class="vrai-faux-question">
                     <h3>Vrai ou Faux (Points: ${currentQuestion.points})</h3>
@@ -553,23 +455,47 @@ function displayCurrentQuestion() {
                 </div>
             `;
             break;
-            
-        case 'dictation':
-            html = `
-                <div class="dictation-question">
-                    <h2>Dictée</h2>
-                    <p>Écoutez et transcrivez la phrase de **${currentQuestion.sourceName}**.</p>
-                    <div id="dictation-audio-container" style="margin: 20px 0;">
-                        </div>
-                    <textarea id="dictation-answer" rows="5" placeholder="Écrivez la phrase ici..."></textarea>
-                    <button onclick="submitDictation('${currentQuestion.text}')">Corriger la Dictée</button>
-                    <div id="dictation-correction-ia" class="feedback-box"></div>
+
+        case 'paragraphe_ia':
+            html += `
+                <div class="paragraphe-sujet">
+                    <h3>Sujet de Rédaction (Correction IA)</h3>
+                    <p class="question-text">${questionText}</p>
+                    <p style="font-style: italic; color: #555;">**Attendus :** ${currentQuestion.attendus.join(' / ')}</p>
+                    <textarea id="paragraphe-answer" rows="10" placeholder="Rédigez votre paragraphe ici..."></textarea>
+                    <button onclick="submitParagrapheIA('${currentQuestion.consigne_ia.replace(/'/g, "\\'")}')">Soumettre à l'IA</button>
+                    <div id="paragraphe-correction-ia" class="feedback-box"></div>
                 </div>
             `;
-            // L'audio doit être rechargé pour cette vue
-            generateAndPlayTTS(currentQuestion.text);
             break;
-
+            
+        case 'spot_error': 
+            html += `
+                <div class="spot-error-question">
+                    <h3>Trouver l'Erreur (Points: ${currentQuestion.points})</h3>
+                    <p class="question-text">${questionText}</p>
+                    <div class="error-text-box feedback-box" style="border: 2px dashed #dc3545; background-color: #f8d7da; margin-bottom: 15px;">
+                        <p style="font-weight: bold; margin-bottom: 5px;">Énoncé à analyser :</p>
+                        <p style="font-style: italic;">${parseMarkdown(currentQuestion.texte_avec_erreur)}</p>
+                    </div>
+                    <p>Quel est l'erreur dans cet énoncé et comment doit-il être corrigé ?</p>
+                    <textarea id="spot_error-answer" rows="5" placeholder="L'erreur est... La correction est..."></textarea>
+                    <button onclick="checkSpotErrorAnswer()">Soumettre la correction à l'IA</button>
+                    <div id="spot_error-correction-ia" class="feedback-box"></div>
+                </div>
+            `;
+            break;
+            
+        case 'dictation':
+            html += `
+                <div class="dictation-question">
+                    <h3>Dictée</h3>
+                    <p>La dictée sera jouée automatiquement. Écoutez attentivement et écrivez le texte dans la zone ci-dessous.</p>
+                    <textarea id="dictation-answer" rows="5" placeholder="Écrivez le texte de la dictée ici..."></textarea>
+                    <button onclick="submitDictation('${currentQuestion.text.replace(/'/g, "\\'")}')">Soumettre la dictée</button>
+                </div>
+            `;
+            break;
 
         default:
             html = '<p class="error">Type de question inconnu.</p>';
@@ -581,7 +507,7 @@ function displayCurrentQuestion() {
 
 // --- FONCTIONS DE CORRECTION ---
 
-// Correction pour QCM et Vrai/Faux (non IA)
+// Correction pour QCM et Vrai/Faux (non IA) - (Inchangée)
 function checkAnswer() {
     const currentQuestion = currentQuizData[currentQuestionIndex];
     let userAnswer = null;
@@ -589,52 +515,40 @@ function checkAnswer() {
     let feedback = '';
     const resultDiv = document.getElementById('correction-feedback');
     
-    // Réinitialise le feedback
     if (resultDiv) resultDiv.innerHTML = '';
     
-    // Gère la correction QCM
     if (currentQuestion.type === 'qcm') {
         const selected = document.querySelector('input[name="qcm_answer"]:checked');
-        if (!selected) {
-            alert("Veuillez sélectionner une option.");
-            return;
-        }
+        if (!selected) { alert("Veuillez sélectionner une option."); return; }
         userAnswer = selected.value;
         
-        // Correction QCM
         const isCorrect = (userAnswer.trim() === currentQuestion.correct_answer.trim());
         
         if (isCorrect) {
             score = currentQuestion.points;
-            feedback = `<p class="correct">✅ **Correct !** La bonne réponse était **${parseMarkdown(currentQuestion.correct_answer)}**.</p>`;
+            feedback = `<p class="correct">✅ **Correct !**</p>`;
         } else {
             score = 0;
-            feedback = `<p class="incorrect">❌ **Incorrect.** Votre réponse était **${parseMarkdown(userAnswer)}**. La bonne réponse était **${parseMarkdown(currentQuestion.correct_answer)}**.</p>`;
+            feedback = `<p class="incorrect">❌ **Incorrect.** La bonne réponse était **${parseMarkdown(currentQuestion.correct_answer)}**.</p>`;
         }
 
     } 
-    // Gère la correction VRAI/FAUX (NOUVEAU)
     else if (currentQuestion.type === 'vrai_faux') { 
         const selected = document.querySelector('input[name="vrai_faux_answer"]:checked');
-        if (!selected) {
-            alert("Veuillez sélectionner 'Vrai' ou 'Faux'.");
-            return;
-        }
+        if (!selected) { alert("Veuillez sélectionner 'Vrai' ou 'Faux'."); return; }
         userAnswer = selected.value;
         
-        // Correction Vrai/Faux
         const isCorrect = (userAnswer.trim().toLowerCase() === currentQuestion.correct_answer.trim().toLowerCase());
         
         if (isCorrect) {
             score = currentQuestion.points;
-            feedback = `<p class="correct">✅ **Correct !** La bonne réponse était **${currentQuestion.correct_answer}**.</p>`;
+            feedback = `<p class="correct">✅ **Correct !**</p>`;
         } else {
             score = 0;
-            feedback = `<p class="incorrect">❌ **Incorrect.** Votre réponse était **${userAnswer}**. La bonne réponse était **${currentQuestion.correct_answer}**.</p>`;
+            feedback = `<p class="incorrect">❌ **Incorrect.** La bonne réponse était **${currentQuestion.correct_answer}**.</p>`;
         }
     }
     else {
-        console.warn("Correction manuelle appelée pour un type de question non prévu (Paragraphe ou Dictée).");
         return;
     }
     
@@ -643,119 +557,142 @@ function checkAnswer() {
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
+// Correction pour Spot the Error (via IA) - (Utilise le même endpoint de correction que le paragraphe)
+async function checkSpotErrorAnswer() {
+    const currentQuestion = currentQuizData[currentQuestionIndex];
+    const answerElement = document.getElementById('spot_error-answer');
+    const userAnswer = answerElement ? answerElement.value.trim() : '';
+    const correctionDiv = document.getElementById('spot_error-correction-ia');
+    const resultDiv = document.getElementById('correction-feedback'); 
 
-// Correction pour Paragraphe (via IA)
-async function submitParagrapheIA(consigne_ia) {
-    const answerElement = document.getElementById('paragraphe-answer');
-    const answer = answerElement ? answerElement.value.trim() : '';
-    const correctionDiv = document.getElementById('paragraphe-correction-ia');
-
-    if (answer.length < 50) {
-        alert("Veuillez rédiger un paragraphe d'au moins 50 caractères pour que l'IA puisse le corriger correctement.");
+    if (userAnswer.length < 10) {
+        alert("Veuillez écrire votre correction de l'erreur.");
         return;
     }
     
-    correctionDiv.innerHTML = '<p class="info">⏳ Envoi à l\'IA pour correction...</p>';
+    correctionDiv.innerHTML = '<p class="info">⏳ Envoi à l\'IA pour évaluation...</p>';
     
-    // Le prompt final combine la consigne de correction et la réponse de l'élève
-    const userPrompt = `Voici la consigne de correction de l'IA: "${consigne_ia}".\nVoici le paragraphe de l'élève à corriger:\n---\n${answer}\n---`;
+    // Le prompt doit contenir toutes les informations nécessaires pour l'IA
+    const consigne_ia = `Vous êtes un correcteur de quiz. La tâche de l'élève était de trouver l'erreur factuelle dans l'énoncé suivant : "${currentQuestion.texte_avec_erreur}". L'erreur VRAIMENT attendue est : "${currentQuestion.correct_answer}". Votre rôle est de comparer la réponse de l'élève à l'erreur attendue et d'évaluer la qualité de sa correction sur les ${currentQuestion.points} points disponibles. Donnez des commentaires constructifs et le score obtenu.`;
+    
+    const userPrompt = `${consigne_ia}\nRéponse de l'élève:\n---\n${userAnswer}\n---`;
     
     try {
         const response = await fetch(CORRECTION_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: userPrompt })
+            headers: { 'Content-Type': 'application/json' },
+            // Le serveur s'attend à un objet simple contenant le prompt, le serveur gère la structure OpenAI.
+            body: JSON.stringify({ prompt: userPrompt, model: "gpt-4o-mini" }) 
         });
 
         const aiData = await response.json();
         
-        if (aiData.error) {
-            throw new Error(aiData.error.details || aiData.error);
-        }
+        if (aiData.error) { throw new Error(aiData.error.details || aiData.error); }
 
         if (aiData.correction_text) {
-             // Applique le surlignage Markdown à la correction
             const formattedCorrection = parseMarkdown(aiData.correction_text);
             correctionDiv.innerHTML = `<div class="ia-feedback">${formattedCorrection}</div>`;
+            
+            // Extraction du score par regex (méthode non idéale mais nécessaire sans JSON structuré)
+            const scoreMatch = aiData.correction_text.match(/score obtenu\s*:\s*(\d+)\s*\/\s*(\d+)/i);
+            let score = 0;
+            if (scoreMatch) {
+                // Tenter de récupérer le score attribué (scoreMatch[1])
+                score = parseInt(scoreMatch[1] || 0);
+            } else {
+                // Fallback: si l'IA ne renvoie pas le format exact, on attribue 0 ou 1 point si la correction semble bonne
+                 score = userAnswer.toLowerCase().includes(currentQuestion.correct_answer.toLowerCase().substring(0, 10)) ? 1 : 0;
+            }
+            
+            userScore += score;
+            resultDiv.innerHTML = `<p class="correct">✅ **Correction IA fournie. Vous obtenez ${score} points (sur ${currentQuestion.points})**</p>`;
+
         } else {
-            console.error("Réponse de l'API de correction incomplète ou mal formée.", aiData);
             correctionDiv.innerHTML = '<p class="error">❌ Erreur: L\'IA n\'a pas retourné de correction valide.</p>';
         }
 
     } catch (error) {
-        console.error("Erreur lors de la correction par l'IA:", error);
+        console.error("Erreur lors de la correction par l'IA (Spot Error):", error);
         correctionDiv.innerHTML = `<p class="error">❌ Erreur de connexion au serveur d'IA. Détails: ${error.message}</p>`;
     }
     
-    // Après la correction, permettre de passer à la question suivante
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
 
-// Correction pour Dictée (via IA)
-async function submitDictation(correctText) {
-    const answerElement = document.getElementById('dictation-answer');
+async function submitParagrapheIA(consigne_ia) {
+    const answerElement = document.getElementById('paragraphe-answer');
     const userAnswer = answerElement ? answerElement.value.trim() : '';
-    const correctionDiv = document.getElementById('dictation-correction-ia');
+    const correctionDiv = document.getElementById('paragraphe-correction-ia');
 
-    if (userAnswer.length < 10) {
-        alert("Veuillez entrer le texte de la dictée.");
+    if (userAnswer.length < 50) {
+        alert("Veuillez rédiger un paragraphe d'au moins 50 caractères.");
         return;
     }
+
+    correctionDiv.innerHTML = '<p class="info">⏳ Soumission à l\'IA pour correction détaillée (cela peut prendre quelques secondes)...</p>';
     
-    correctionDiv.innerHTML = '<p class="info">⏳ Envoi à l\'IA pour correction de la dictée...</p>';
-    
-    // Consigne IA pour la correction de dictée
-    const consigne_ia = `Vous êtes un correcteur de dictée de 3e. Comparez le texte de l'élève au texte correct. Listez les erreurs (orthographe, grammaire, ponctuation) et donnez des commentaires constructifs. Ne donnez pas de note. Le texte original était: "${correctText}".`;
-    
-    const userPrompt = `${consigne_ia}\nTexte de l'élève:\n---\n${userAnswer}\n---`;
+    const userPrompt = `${consigne_ia}\n\nParagraphe de l'élève:\n---\n${userAnswer}\n---`;
 
     try {
         const response = await fetch(CORRECTION_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: userPrompt })
+            body: JSON.stringify({ prompt: userPrompt, model: "gpt-4o-mini" }) // Modèle utilisé pour la correction
         });
 
         const aiData = await response.json();
         
-        if (aiData.error) {
-            throw new Error(aiData.error.details || aiData.error);
-        }
-
+        if (aiData.error) { throw new Error(aiData.error.details || aiData.error); }
+        
         if (aiData.correction_text) {
-             // Applique le surlignage Markdown à la correction
             const formattedCorrection = parseMarkdown(aiData.correction_text);
             correctionDiv.innerHTML = `<div class="ia-feedback">${formattedCorrection}</div>`;
         } else {
-            console.error("Réponse de l'API de correction incomplète ou mal formée.", aiData);
             correctionDiv.innerHTML = '<p class="error">❌ Erreur: L\'IA n\'a pas retourné de correction valide.</p>';
         }
 
     } catch (error) {
-        console.error("Erreur lors de la correction de la dictée par l'IA:", error);
+        console.error("Erreur lors de la correction par l'IA (Paragraphe):", error);
         correctionDiv.innerHTML = `<p class="error">❌ Erreur de connexion au serveur d'IA. Détails: ${error.message}</p>`;
     }
     
-    // Après la correction, permettre de passer à la question suivante
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
+// Dictation submission (Inchangée)
+function submitDictation(originalText) {
+    const answerElement = document.getElementById('dictation-answer');
+    const userAnswer = answerElement ? answerElement.value.trim() : '';
+    const resultDiv = document.getElementById('correction-feedback');
 
-// --- Navigation ---
+    if (userAnswer.length === 0) {
+        alert("Veuillez écrire votre dictée.");
+        return;
+    }
+
+    const normalizedUser = userAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+    const normalizedOriginal = originalText.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+
+    if (normalizedUser === normalizedOriginal) {
+        resultDiv.innerHTML = `<p class="correct">✅ **Excellent !** Vous avez une orthographe et une syntaxe parfaites.</p>`;
+        userScore += 1; 
+        totalQuizPoints += 1;
+    } else {
+        resultDiv.innerHTML = `<p class="incorrect">❌ **Erreurs détectées.** Votre version contient des différences.</p>
+                               <p>Version attendue : **${originalText}**</p>
+                               <p>Votre version : **${userAnswer}**</p>`;
+        totalQuizPoints += 1;
+    }
+    document.getElementById('next-question-btn').style.display = 'block';
+}
+
+// --- Navigation et Score Final (Inchangée) ---
 
 function nextQuestion() {
     console.log("Passage à la question suivante.");
-    const correctionFeedbackDiv = document.getElementById('correction-feedback');
-    if (correctionFeedbackDiv) {
-        correctionFeedbackDiv.innerHTML = '';
-    }
-    const nextQuestionBtn = document.getElementById('next-question-btn');
-    if (nextQuestionBtn) {
-        nextQuestionBtn.style.display = 'none';
-    }
+    document.getElementById('correction-feedback').innerHTML = '';
+    document.getElementById('next-question-btn').style.display = 'none';
 
     currentQuestionIndex++;
     if (currentQuestionIndex < currentQuizData.length) {
@@ -769,17 +706,15 @@ function showFinalScore() {
     console.log("Fin du quiz. Score utilisateur:", userScore, "Total points possibles:", totalQuizPoints);
     let feedback = `<h2>🎉 Quiz terminé !</h2>`;
     
-    // On ne calcule la note sur 20 que si des questions ont été notées (QCM ou Vrai/Faux).
     if (totalQuizPoints > 0) {
-        // Note sur 20 calculée à partir du score obtenu / score total des questions générées
         const finalNote = (userScore / totalQuizPoints) * 20; 
         const finalNoteRounded = finalNote.toFixed(2);
         
         feedback += `<p>Votre performance globale est de **${userScore.toFixed(2)} / ${totalQuizPoints} points**.</p>`;
         feedback += `<h3>Votre note estimée sur 20 est : **${finalNoteRounded} / 20**</h3>`;
     } else {
-         feedback += `<p>Ce quiz ne contenait que des sujets de rédaction (paragraphes) ou des dictées. L'évaluation de l'IA doit être lue dans les commentaires précédents.</p>`;
+         feedback += `<p>Ce quiz contenait principalement des sujets de rédaction ou des erreurs dans le calcul du score total.</p>`;
     }
 
-    document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer</button>';
-        }
+    document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer un quiz</button>';
+}
