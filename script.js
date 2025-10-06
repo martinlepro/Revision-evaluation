@@ -243,6 +243,28 @@ async function startQuiz(quizType = 'mixte') {
         <p class="loading-message">Le serveur d'entraînement (Render) est en train de se réveiller et de générer les questions. Veuillez patienter (jusqu'à 60 secondes la première fois).</p>
     `;
     // ------------------------------------------------------------------
+    
+    // ------------------------------------------------------------------
+    // NOUVELLE LOGIQUE : CHOISIR UN NOMBRE ALÉATOIRE DE QUESTIONS
+    // ------------------------------------------------------------------
+    
+    // 1. Détermine le nombre de questions à générer (entre MIN et MAX)
+    // Exemple : si MIN=5 et MAX=10
+    // Math.random() * (10 - 5 + 1) donnera un nombre entre 0 et 6.
+    // Ajouter 5 donne un nombre entre 5 et 11. Math.floor l'arrondit à 5, 6, 7, 8, 9, ou 10.
+    const questionsToGenerate = Math.floor(Math.random() * (MAX_QUESTIONS - MIN_QUESTIONS + 1)) + MIN_QUESTIONS;
+    
+    console.log(`Tentative de générer ${questionsToGenerate} questions sur ${selectedItems.length} sujets sélectionnés.`);
+
+    // 2. Boucle pour appeler l'IA le nombre de fois choisi
+    for (let i = 0; i < questionsToGenerate; i++) {
+        // Sélectionne un sujet aléatoirement (important si plusieurs sujets sont cochés)
+        const randomIndex = Math.floor(Math.random() * selectedItems.length);
+        const item = selectedItems[randomIndex];
+
+        // Appelle la génération pour un sujet aléatoire.
+        await generateRandomQuestionFromContent(item.content, quizType, item.name);
+    }
     if (isQuizRunning) return;
     isQuizRunning = true;
 
