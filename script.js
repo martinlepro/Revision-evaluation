@@ -228,8 +228,9 @@ function parseMarkdown(text) {
 // --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
 
 async function startQuiz(quizType = 'mixte') {
+async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
-    // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION (DOIT TOUJOURS ÊTRE LA PREMIÈRE)
+    // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
     // ----------------------------------------------------------------------
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet de révision.");
@@ -290,7 +291,7 @@ async function startQuiz(quizType = 'mixte') {
 
 
     // ----------------------------------------------------------------------
-    // ÉTAPE 3 : GÉNÉRATION ALÉATOIRE (UTILISE LE CONTENU PRÉCHARGÉ)
+    // ÉTAPE 3 : GÉNÉRATION ALÉATOIRE AVEC DÉLAI (POUR CONTOURNER LE RATE LIMIT)
     // ----------------------------------------------------------------------
     
     // Détermine le nombre de questions à générer (entre MIN et MAX)
@@ -305,6 +306,16 @@ async function startQuiz(quizType = 'mixte') {
 
         // Appelle la génération pour ce contenu
         await generateRandomQuestionFromContent(source.content, quizType, source.name);
+        
+        // --- NOUVEAU : AJOUT DU DÉLAI DE 21 SECONDES POUR LE RATE LIMIT ---
+        // Le délai est ignoré pour la dernière question.
+        if (i < questionsToGenerate - 1) {
+             feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 21 secondes avant la prochaine question...</p>`;
+             console.warn("Pause de 21 secondes pour respecter la limite de débit OpenAI.");
+             await delay(21000); // 21 000 millisecondes = 21 secondes
+             feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 2}/${questionsToGenerate}...</p>`;
+        }
+        // ------------------------------------------------------------------
     }
     
     // ----------------------------------------------------------------------
@@ -321,6 +332,7 @@ async function startQuiz(quizType = 'mixte') {
         document.getElementById('selection-view').style.display = 'block';
     }
 }
+    
 async function generateRandomQuestionFromContent(content, forcedType, sourceName) {
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
     generationFeedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer une question pour **${sourceName}**...</p>`;
