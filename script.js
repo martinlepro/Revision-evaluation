@@ -312,6 +312,7 @@ async function generateRandomQuestionFromContent(content, forcedType, sourceName
         generationFeedbackDiv.innerHTML = '<p class="error">❌ Type de question IA invalide.</p>';
         return;
     }
+    instruction += ` Le quiz doit être composé d'un minimum de ${MIN_QUESTIONS} questions et d'un maximum de ${MAX_QUESTIONS} questions. La somme totale des points attribués à toutes les questions doit être EXACTEMENT de **${TARGET_QUIZ_POINTS} points**. Chaque question doit avoir son barème spécifié (ex: Q1: 4 points).`;
 
     try {
         const response = await fetch(GENERATION_API_URL, {
