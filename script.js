@@ -342,19 +342,27 @@ async function startQuiz(quizType = 'mixte') {
     for (let i = 0; i < questionsToGenerate; i++) {
         
         // --- NOUVEAU : GESTION DU DÉLAI ET DU STATUT ---
-        if (i === 0) {
-            // Pause initiale de 1.5s pour donner le temps à Render de "sortir de veille" (cold start)
-            feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
-            await delay(1); 
-            feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question 1/${questionsToGenerate}...</p>`;
-            
-        } else {
-            // Pause de 21s pour le Rate Limit, à partir de la 2ème question
-            feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 21 secondes avant la prochaine question...</p>`;
-            console.warn("Pause de 1 millisecondes pour respecter la limite de débit OpenAI.");
-            await delay(1);
-            feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
-        }
+        // ... (dans startQuiz, à l'intérieur de la boucle for (let i = 0; i < questionsToGenerate; i++)) ...
+
+    // --- GESTION DU DÉLAI et du COLD START ---
+    
+    // Si c'est la première question, gérons le cold start.
+    if (i === 0) {
+        feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
+        await delay(1500); // Délai initial pour Render
+        
+    } else {
+        // Sinon, attente de 20s pour respecter le Rate Limit de 3 RPM
+        feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 20 secondes...</p>`;
+        console.warn("Pause de 20 secondes pour respecter la limite de débit OpenAI (3 RPM).");
+        await delay(20000); // 20 secondes d'attente
+    }
+    
+    feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
+
+    // ------------------------------------------
+
+    // ... (le reste de la boucle de génération suit ici) ...
         // ------------------------------------------------
 
         // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS (loadedContents)
