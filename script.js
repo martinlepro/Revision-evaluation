@@ -85,67 +85,64 @@ console.log(`URL de l'API Backend: ${BASE_API_URL}`);
 // Note : Le 'type' ici est un 'type de leçon', et non le type de question générée.
 
 const STRUCTURE = {
+    // CORRECTION CLÉ : Pas d'accent dans Mathematiques
     "Mathematiques": {
-        "Nombres_Premiers": [
-            { name: "Leçon Nombres Premiers", file: "lecon_nombres_premiers.txt", type: "qcm" } // Leçon support
-        ],
         "T1_STATISTIQUES": [
-            { name: "Statistiques", file: "Mathematiques/T1_STATISTIQUES/Statistiques.txt", type: "qcm" } 
+            { name: "Statistiques", file: "Mathematiques/T1_STATISTIQUES/Statistiques.txt", type: "qcm" }
         ],
-        "G1_Triangles et proportionnalité": [
-            { name: "Théorème de Thalès", file: "Mathematiques/G1-Triangles et proportionnalité/Triangles et proportionnalité.txt", type: "qcm" } 
-        ],
-        "GEOMETRIE_LES_AIRES": [
-            { name: "Formules d'Aires et Périmètres", file: "Mathematiques/Les aires.txt", type: "qcm" } 
+        "G1-Triangles et proportionnalité": [
+            { name: "Triangles et proportionnalité", file: "Mathematiques/G1-Triangles et proportionnalité/Triangles et proportionnalité.txt", type: "qcm" },
+            { name: "Les aires", file: "Mathematiques/G1-Triangles et proportionnalité/Les aires.txt", type: "qcm" }
         ]
     },
     "Francais": {
-        "Grammaire": [
-            { name: "Les classes grammaticales", file: "Francais/Grammaire/Les classes grammaticales.txt", type: "qcm" },
-            { name: "L'accord du verbe et du sujet", file: "Francais/Grammaire/L'accord du verbe et du sujet .txt", type: "qcm" }
+        "Écriture": [
+            { name: "Qui est je", file: "Francais/Écriture/Qui est je.txt", type: "paragraphe" },
+            { name: "Autoportrait", file: "Francais/Écriture/Autoportrait.txt", type: "paragraphe" }
         ],
         "Analyse": [
-            { name: "Analyse d'un texte", file: "Francais/Analyse/Analyse d'un texte .txt", type: "paragraphe" },
-            { name: "Autoportrait", file: "Francais/Analyse/Autoportrait.txt", type: "paragraphe" } 
-        ]
-    },
-    "Histoire-Geo": {
-        "Histoire": [
-            { name: "1er Guerre Mondiale", file: "Histoire_Geo/Histoire/1er-Guerre-Mondiale.txt", type: "paragraphe" }
+            { name: "Analyse d'un texte", file: "Francais/Analyse/Analyse d'un texte .txt", type: "paragraphe" }
         ],
-        "Geographie": [
-            { name: "Les aires urbaines", file: "Histoire_Geo/Geographie/Les aires urbaines.txt", type: "paragraphe" } 
+        "Conjugaison": [
+             { name: "Le Présent (Indicatif)", file: "Francais/Conjugaison/Le Présent (Indicatif).txt", type: "dictation" }
         ]
     },
-    "Physique-Chimie": {
-        "Chimie": [
-            { name: "Atomes et Tableau Périodique", file: "Physique-Chimie/Chimie/Atomes et Tableau Périodique.txt", type: "qcm" }
-        ]
-    },
-    "Science-de-la-Vie-et-de-la-Terre": {
-        "Biologie": [
-            { name: "Le programme génétique", file: "Science-de-la-Vie-et-de-la-Terre/Biologie/Le programme génétique.txt", type: "qcm" },
-            { name: "L'Hérédité (Génétique)", file: "Science-de-la-Vie-et-de-la-Terre/Biologie/L'Hérédité (Génétique).txt", type: "qcm" }
-        ]
-    },
-    "Technologie": {
-        "Systèmes": [
-            { name: "Les systèmes automatisés", file: "Technologie/Systèmes/Les systèmes automatisés.txt", type: "qcm" }
-        ]
-    },
+    // CORRECTION CLÉ : Anglais avec A majuscule
     "Anglais": {
         "Culture": [
             { name: "Les pays anglophones", file: "Anglais/Culture/Les pays anglophones.txt", type: "qcm" }
         ]
     },
-    "Musique": {
+    "Histoire_Geo": { // CLÉ : Avec underscore
         "Histoire": [
-            { name: "La Chanson Engagée", file: "musique/Histoire/Chanson engagée.txt", type: "paragraphe" }
+            { name: "1er-Guerre-Mondiale", file: "Histoire_Geo/Histoire/1er-Guerre-Mondiale.txt", type: "mixte" }
         ]
     },
-    "Arts-Plastiques": {
-        "ANALYSE_OEUVRE": [
-            { name: "Méthode pour analyser une œuvre d'art", file: "Art-Plastiques/Méthode pour analyser une œuvre d'art.txt", type: "paragraphe" }
+    "Science-de-la-Vie-et-de-la-Terre": {
+        "Biologie": [
+            { name: "Le programme génétique", file: "Science-de-la-Vie-et-de-la-Terre/Biologie/Le programme génétique.txt", type: "mixte" },
+            { name: "L'Hérédité (Génétique)", file: "Science-de-la-Vie-et-de-la-Terre/Biologie/L'Hérédité (Génétique).txt", type: "mixte" }
+        ]
+    },
+    // CLÉ : technologie en minuscules
+    "technologie": {
+        "Systèmes": [
+            { name: "Les systèmes automatisés", file: "technologie/Systèmes/Les systèmes automatisés.txt", type: "mixte" }
+        ]
+    },
+    "Physique-Chimie": {
+        "Chimie": [
+            { name: "Atomes et Tableau Périodique", file: "Physique-Chimie/Chimie/Atomes et Tableau Périodique.txt", type: "mixte" }
+        ]
+    },
+    "Art-Plastiques": {
+        "Méthodologie": [
+            { name: "Analyser une œuvre d'art", file: "Art-Plastiques/Méthodologie/Méthode pour analyser une œuvre d'art.txt", type: "paragraphe" }
+        ]
+    },
+    "musique": {
+        "Histoire": [
+            { name: "Chanson engagée", file: "musique/Histoire/Chanson engagée.txt", type: "paragraphe" }
         ]
     }
 };
@@ -238,10 +235,10 @@ function updateSelectedBox() {
 
 // --- FONCTION DE RÉCUPÉRATION DU CONTENU RÉEL DES FICHIERS ---
 async function fetchContent(path) {
-    // IMPORTANT : On suppose que les fichiers sont accessibles directement
-    // via l'URL de base de votre dépôt GitHub Pages (e.g., /matieres/...)
-    // Assurez-vous que l'URL d'appel est correcte (commence par 'matieres/...')
-    const fullPath = `matieres/${path.substring(path.indexOf('/') + 1)}`;
+    // path est maintenant le chemin complet de la STRUCTURE (ex: "Mathematiques/T1_STATISTIQUES/Statistiques.txt")
+    
+    // CORRECTION CLÉ : On n'utilise plus de substring !
+    const fullPath = `matieres/${path}`; // 👈 C'EST LA LIGNE CORRECTE
     console.log(`Tentative de chargement du fichier : ${fullPath}`);
     
     try {
