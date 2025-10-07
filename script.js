@@ -151,20 +151,26 @@ const STRUCTURE = {
 
 // --- FONCTIONS DE DÉMARRAGE ET DE CHARGEMENT ---
 
+// --- FONCTIONS DE DÉMARRAGE ET DE CHARGEMENT ---
+
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Déclarez les variables de debug ici pour être sûr que l'élément HTML existe
-    const debugElement = document.getElementById('debug');
-    // ... toutes vos fonctions de logging personnalisées (console.log, etc.)
-    // doivent pouvoir accéder à debugElement.
+    // CHANGEMENT CRITIQUE 2 : INITIALISATION DE L'ÉLÉMENT
+    // L'affectation de la variable globale 'debugElement' est sécurisée ici
+    debugElement = document.getElementById('debug');
     
-    // Si elles sont déclarées plus haut, assurez-vous de l'initialiser ici:
+    // CHANGEMENT CRITIQUE 3 : AFFICHAGE DES LOGS DE VERSION
     if (debugElement) {
+        // Ces logs s'affichent maintenant DANS votre console de débogage !
         console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
         console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
+        console.log("script.js chargé. Logging personnalisé actif.");
     }
 
     renderMenu();
+    // ... (le reste de vos écouteurs d'événements) ...
+    updateSelectedBox();
+});
 
     // Associer les boutons de type de quiz aux fonctions
     document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixte'));
