@@ -168,9 +168,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     renderMenu();
-    // ... (le reste de vos écouteurs d'événements) ...
-    updateSelectedBox();
-});
 
     // Associer les boutons de type de quiz aux fonctions
     document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixte'));
@@ -181,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
     updateSelectedBox();
-});
+    
+}); // C'est la SEULE et UNIQUE fermeture de ce bloc.
 
 function renderMenu() {
     const menuContainer = document.getElementById('menu-container');
