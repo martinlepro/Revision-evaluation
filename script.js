@@ -2,16 +2,18 @@
 
 // --- FONCTIONS DE DÉBOGAGE PERSONNALISÉES ---
 // (Les fonctions de logging restent inchangées et sont critiques pour le débogage)
-const debugElement = document.getElementById('debug');
+
+// CHANGEMENT CRITIQUE 1 : Déclaré avec 'let' et initialisé à null pour être affecté plus tard
+let debugElement = null; 
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 const VERSION_INFO = "v1.5 - Correction Cold Start et Logs - 07/10/2025 à 09:10"; 
 
-console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
-console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
+// Les appels console.info sont maintenant DÉPLACÉS dans le bloc DOMContentLoaded !
 
 function appendToDebug(message, type = 'log') {
+    // La vérification est CRITIQUE (elle ne passe que si l'élément a été trouvé dans DOMContentLoaded)
     if (debugElement) {
         const p = document.createElement('p');
         p.style.whiteSpace = 'pre-wrap';
@@ -51,6 +53,8 @@ console.error = function(...args) {
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
     appendToDebug(message, 'error');
 };
+
+// ... (le reste du code, comme les variables globales, ne change pas jusqu'à DOMContentLoaded)
 console.log("script.js chargé. Logging personnalisé actif.");
 
 // --- Variables Globales ---
@@ -148,6 +152,18 @@ const STRUCTURE = {
 // --- FONCTIONS DE DÉMARRAGE ET DE CHARGEMENT ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    
+    // Déclarez les variables de debug ici pour être sûr que l'élément HTML existe
+    const debugElement = document.getElementById('debug');
+    // ... toutes vos fonctions de logging personnalisées (console.log, etc.)
+    // doivent pouvoir accéder à debugElement.
+    
+    // Si elles sont déclarées plus haut, assurez-vous de l'initialiser ici:
+    if (debugElement) {
+        console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
+        console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
+    }
+
     renderMenu();
 
     // Associer les boutons de type de quiz aux fonctions
