@@ -39,6 +39,10 @@ function appendToDebug(message, type = 'log') {
     }
 }
 
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 console.log = function(...args) {
     originalConsoleLog.apply(console, args); 
     const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' ');
