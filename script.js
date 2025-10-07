@@ -5,6 +5,7 @@
 
 // CHANGEMENT CRITIQUE 1 : Déclaré avec 'let' et initialisé à null pour être affecté plus tard
 let debugElement = null; 
+
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
