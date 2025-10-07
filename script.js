@@ -235,11 +235,29 @@ function updateSelectedBox() {
     }
 }
 
+// --- FONCTION DE RÉCUPÉRATION DU CONTENU RÉEL DES FICHIERS ---
 async function fetchContent(path) {
-    // Simule la récupération du contenu. Dans un vrai déploiement,
-    // l'API doit être configurée pour lire ces fichiers.
-    const mockContent = `Leçon sur ${path}`; 
-    return mockContent;
+    // IMPORTANT : On suppose que les fichiers sont accessibles directement
+    // via l'URL de base de votre dépôt GitHub Pages (e.g., /matieres/...)
+    // Assurez-vous que l'URL d'appel est correcte (commence par 'matieres/...')
+    const fullPath = `matieres/${path.substring(path.indexOf('/') + 1)}`;
+    console.log(`Tentative de chargement du fichier : ${fullPath}`);
+    
+    try {
+        const response = await fetch(fullPath);
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status} pour le fichier ${fullPath}`);
+        }
+        // Récupère le contenu brut du fichier texte
+        const content = await response.text(); 
+        return content;
+        
+    } catch (error) {
+        console.error(`Échec du chargement du fichier ${fullPath}:`, error);
+        // Afficher l'erreur dans la console de debug de la page
+        document.getElementById('ai-generation-feedback').innerHTML = `<p class="error">❌ Échec du chargement : ${fullPath}</p>`;
+        return null; // Retourne null si le chargement échoue
+    }
 }
 
 function parseMarkdown(text) {
@@ -327,14 +345,14 @@ async function startQuiz(quizType = 'mixte') {
         if (i === 0) {
             // Pause initiale de 1.5s pour donner le temps à Render de "sortir de veille" (cold start)
             feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
-            await delay(1500); 
+            await delay(1); 
             feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question 1/${questionsToGenerate}...</p>`;
             
         } else {
             // Pause de 21s pour le Rate Limit, à partir de la 2ème question
             feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 21 secondes avant la prochaine question...</p>`;
-            console.warn("Pause de 21 secondes pour respecter la limite de débit OpenAI.");
-            await delay(21000);
+            console.warn("Pause de 1 millisecondes pour respecter la limite de débit OpenAI.");
+            await delay(1);
             feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
         }
         // ------------------------------------------------
