@@ -206,7 +206,9 @@ function renderMenu() {
 }
 
 function getItemPath(matiere, subMatiere, item) {
-    return `${matiere}/${subMatiere}/${item.file}`;
+    // CORRECTION : On utilise SIMPLEMENT la valeur déjà formatée dans item.file
+    // Elle contient déjà : "Anglais/Culture/Les pays anglophones.txt"
+    return item.file;
 }
 
 function toggleSelection(checkbox) {
