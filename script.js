@@ -6,6 +6,8 @@ const debugElement = document.getElementById('debug');
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
+const VERSION_INFO = "v1.5 - Correction Cold Start et Logs - 07/10/2025 à 09:10"; 
+
 
 function appendToDebug(message, type = 'log') {
     if (debugElement) {
@@ -404,9 +406,18 @@ async function generateRandomQuestionFromContent(content, forcedType, sourceName
             generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA n\'a pas pu générer le contenu. Réponse inattendue du serveur.</p>';
         }
 
-    } catch (error) {
-        console.error("Erreur lors de la génération par l'IA:", error);
-        generationFeedbackDiv.innerHTML = `<p class="error">❌ Erreur de connexion ou format JSON invalide. Détails: ${error.message}</p>`;
+} catch (error) {
+        console.error("Erreur critique (Réseau/Analyse) :", error);
+        
+        // Journalisation améliorée dans le debugElement
+        let errorMessage = error.message || "Erreur inconnue.";
+        
+        // Ajout d'une vérification pour les erreurs de réseau/timeout
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            errorMessage = "Erreur Réseau (Timeout Render ?). Le serveur n'a pas répondu à temps.";
+        }
+        
+        generationFeedbackDiv.innerHTML = `<p class="error">❌ Échec critique : ${errorMessage.substring(0, 100)}...</p>`;
     }
 }
 
