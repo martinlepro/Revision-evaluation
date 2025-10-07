@@ -331,6 +331,9 @@ async function startQuiz(quizType = 'mixte') {
     }
 
 
+
+// ... (dans la fonction async function startQuiz(quizType = 'mixte'))
+
     // ----------------------------------------------------------------------
     // ÉTAPE 3 : GÉNÉRATION ALÉATOIRE AVEC DÉLAI (POUR CONTOURNER LE RATE LIMIT)
     // ----------------------------------------------------------------------
@@ -339,16 +342,6 @@ async function startQuiz(quizType = 'mixte') {
     const questionsToGenerate = Math.floor(Math.random() * (MAX_QUESTIONS - MIN_QUESTIONS + 1)) + MIN_QUESTIONS;
     feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer **${questionsToGenerate}** questions...</p>`;
     
-    // Boucle pour appeler l'IA le nombre de fois choisi
-    for (let i = 0; i < questionsToGenerate; i++) {
-        
-        // --- NOUVEAU : GESTION DU DÉLAI ET DU STATUT ---
-        // ... (dans startQuiz, à l'intérieur de la boucle for (let i = 0; i < questionsToGenerate; i++)) ...
-
-    // --- GESTION DU DÉLAI et du COLD START ---
-    
-// DANS startQuiz (remplacer les lignes 231 à 260 environ)
-
     // Boucle pour appeler l'IA le nombre de fois choisi
     for (let i = 0; i < questionsToGenerate; i++) {
         
@@ -376,8 +369,6 @@ async function startQuiz(quizType = 'mixte') {
         // Appelle la génération pour ce contenu
         await generateRandomQuestionFromContent(source.content, quizType, source.name);
     }
-    
-// ... (le reste de startQuiz, l'Étape 4, suit ici)    
     // ----------------------------------------------------------------------
     // ÉTAPE 4 : AFFICHAGE FINAL
     // ----------------------------------------------------------------------
