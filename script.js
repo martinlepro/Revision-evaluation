@@ -61,8 +61,8 @@ let isQuizRunning = false;
 // REMPLACER PAR L'URL DE VOTRE SERVEUR RENDER
 const BASE_API_URL = 'https://cle-api.onrender.com';
 const CORRECTION_API_URL = `${BASE_API_URL}/correction`;
-const GENERATION_API_URL = `${BASE_API_URL}/generation`;
-const TTS_API_URL = `${BASE_API_URL}/tts`; // La route TTS est conservée
+const GENERATION_API_URL = `${BASE_API_URL}/generate`; // <-- CORRECTION ICI !
+const TTS_API_URL = `${BASE_API_URL}/tts`; 
 // --- NOUVELLES CONSTANTES POUR LE SCORING ---
 const TARGET_QUIZ_POINTS = 20;
 const MIN_QUESTIONS = 5;
