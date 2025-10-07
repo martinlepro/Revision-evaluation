@@ -346,7 +346,7 @@ async function startQuiz(quizType = 'mixte') {
 
     // --- GESTION DU DÉLAI et du COLD START ---
     
-// DANS startQuiz (à l'intérieur de la boucle 'for')
+// DANS startQuiz (remplacer les lignes 231 à 260 environ)
 
     // Boucle pour appeler l'IA le nombre de fois choisi
     for (let i = 0; i < questionsToGenerate; i++) {
@@ -366,7 +366,7 @@ async function startQuiz(quizType = 'mixte') {
         
         feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
 
-        // --- Fin de la gestion du délai ---
+        // --- Début de la génération ---
 
         // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS (loadedContents)
         const randomIndex = Math.floor(Math.random() * loadedContents.length);
@@ -374,10 +374,9 @@ async function startQuiz(quizType = 'mixte') {
 
         // Appelle la génération pour ce contenu
         await generateRandomQuestionFromContent(source.content, quizType, source.name);
-    } // Fin de la boucle for
+    }
     
-// ... (le reste de startQuiz, comme l'affichage final, suit ici)
-    
+// ... (le reste de startQuiz, l'Étape 4, suit ici)    
     // ----------------------------------------------------------------------
     // ÉTAPE 4 : AFFICHAGE FINAL
     // ----------------------------------------------------------------------
