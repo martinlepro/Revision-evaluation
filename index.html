@@ -5,29 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Révisions 3ème - IA Helper</title>
     <link rel="stylesheet" href="style.css"> 
-    <style>
-        /* Styles CSS critiques pour le débogage */
-        #debug {
-            color: yellow;
-            background: rgba(0, 0, 0, 0.85); /* Fond sombre, semi-transparent */
-            z-index: 99999;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            max-height: 30vh; /* 30% de la hauteur de l'écran */
-            overflow: auto;
-            padding: 5px;
-            font-size: 0.8em;
-            border-bottom: 2px solid #007bff;
-            text-align: left;
-        }
-        /* Marge pour pousser le contenu sous la console de debug */
-        .content-wrapper {
-            margin-top: 32vh; /* Plus grand que la max-height de #debug */
-            padding-top: 20px;
-        }
-    </style>
+<style>
+    /* Styles CSS critiques pour le débogage */
+    #debug {
+        color: yellow;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 99999;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        max-height: 30vh; /* Hauteur maximale de 30% de l'écran */
+        overflow-y: scroll; /* <-- AJOUT/MODIFICATION : Permet le défilement vertical */
+        padding: 5px;
+        font-size: 0.8em;
+        border-bottom: 2px solid #007bff;
+        text-align: left;
+    }
+</style>
 </head>
 <body>
     
