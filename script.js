@@ -346,24 +346,27 @@ async function startQuiz(quizType = 'mixte') {
 
     // --- GESTION DU DÉLAI et du COLD START ---
     
-    // Si c'est la première question, gérons le cold start.
-    if (i === 0) {
-        feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
-        await delay(1500); // Délai initial pour Render
+// DANS startQuiz (à l'intérieur de la boucle 'for')
+
+    // Boucle pour appeler l'IA le nombre de fois choisi
+    for (let i = 0; i < questionsToGenerate; i++) {
         
-    } else {
-        // Sinon, attente de 20s pour respecter le Rate Limit de 3 RPM
-        feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 20 secondes...</p>`;
-        console.warn("Pause de 20 secondes pour respecter la limite de débit OpenAI (3 RPM).");
-        await delay(20000); // 20 secondes d'attente
-    }
-    
-    feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
+        // --- GESTION DU DÉLAI et du COLD START ---
+        
+        // Si c'est la première question, gérons le cold start (1.5s).
+        if (i === 0) {
+            feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
+            await delay(1500); 
+        } else {
+            // Sinon, attente de 20s pour respecter le Rate Limit de 3 RPM
+            feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 20 secondes...</p>`;
+            console.warn("Pause de 20 secondes pour respecter la limite de débit OpenAI (3 RPM).");
+            await delay(20000); // 20 secondes d'attente
+        }
+        
+        feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
 
-    // ------------------------------------------
-
-    // ... (le reste de la boucle de génération suit ici) ...
-        // ------------------------------------------------
+        // --- Fin de la gestion du délai ---
 
         // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS (loadedContents)
         const randomIndex = Math.floor(Math.random() * loadedContents.length);
@@ -371,7 +374,9 @@ async function startQuiz(quizType = 'mixte') {
 
         // Appelle la génération pour ce contenu
         await generateRandomQuestionFromContent(source.content, quizType, source.name);
-    }
+    } // Fin de la boucle for
+    
+// ... (le reste de startQuiz, comme l'affichage final, suit ici)
     
     // ----------------------------------------------------------------------
     // ÉTAPE 4 : AFFICHAGE FINAL
