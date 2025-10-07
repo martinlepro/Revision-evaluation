@@ -8,6 +8,8 @@ const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 const VERSION_INFO = "v1.5 - Correction Cold Start et Logs - 07/10/2025 à 09:10"; 
 
+console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
+console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
 
 function appendToDebug(message, type = 'log') {
     if (debugElement) {
