@@ -83,7 +83,8 @@ const MAX_QUESTIONS = 10;
 // ---------------------------------------------
 
 console.log(`URL de l'API Backend: ${BASE_API_URL}`);
-const QUIZ_API_ENDPOINT = https://cle-api.onrender.com/generate';
+
+const QUIZ_API_ENDPOINT = 'https://cle-api.onrender.com/generate';
 async function fetchQuizData(subject) {
     console.log(`Début de la génération du quiz pour le sujet: ${subject}`);
     showLoading(true);
