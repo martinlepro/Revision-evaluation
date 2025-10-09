@@ -83,10 +83,71 @@ const MAX_QUESTIONS = 10;
 // ---------------------------------------------
 
 console.log(`URL de l'API Backend: ${BASE_API_URL}`);
+const QUIZ_API_ENDPOINT = https://cle-api.onrender.com/generate';
+async function fetchQuizData(subject) {
+    console.log(`Début de la génération du quiz pour le sujet: ${subject}`);
+    showLoading(true);
+    
+    // Le prompt 'system' définit le comportement de l'IA.
+    const systemPrompt = `Vous êtes un générateur de quiz d'histoire et de géographie pour des élèves de 3e. Votre réponse DOIT être uniquement un tableau JSON, SANS aucun texte d'introduction ou d'explication. Le tableau doit contenir 5 objets QuizQuestion, chaque objet ayant la structure suivante : { type: string (soit 'mcq' pour choix multiple, soit 'short_answer' pour réponse courte, soit 'long_answer' pour rédaction), question: string, options: array (liste des choix pour mcq, vide pour short_answer/long_answer), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points maximum pour la question, 1 pour mcq/short_answer, 5 pour long_answer) }.`;
+    
+    // Le prompt 'user' définit la tâche spécifique.
+    const userPrompt = `Générer un quiz de 5 questions sur le thème: "${subject}". Le quiz doit contenir 2 questions à choix multiples (mcq), 2 questions à réponse courte (short_answer), et 1 question de rédaction (long_answer).`;
+    
+    // Structure de l'objet à envoyer, compatible avec le server.js
+    const payload = {
+        prompt: {
+            system: systemPrompt,
+            user: userPrompt
+        }
+    };
+    
+    try {
+        const response = await fetch(QUIZ_API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload) // Envoi du payload structuré
+        });
 
-// --- Structure des matières (Catalogue des leçons) ---
-// --- Gestion de la structure des matières (Catalogue des leçons) ---
-// Note : Le 'type' ici est un 'type de leçon', et non le type de question générée.
+        if (response.status === 429) {
+            console.error('Erreur 429: Limite de débit atteinte pour toutes les clés API. Veuillez réessayer dans 30 minutes.');
+            showError('Limite de débit atteinte pour toutes les clés API. Veuillez réessayer dans 30 minutes.');
+            return null;
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Erreur API:', response.status, errorData.error);
+            showError(`Erreur du serveur proxy : ${errorData.details || errorData.error || response.statusText}.`);
+            return null;
+        }
+
+        // ... Le reste de la fonction reste inchangé : traitement et parsing JSON de la réponse API
+        const data = await response.json();
+        
+        // Extraction du texte de la réponse (qui devrait être le JSON brut)
+        const jsonText = data.choices[0].message.content.trim();
+        
+        // ... (suite de la fonction pour le parsing et l'affichage) ...
+
+        // Tentative de nettoyer le JSON (si l'IA a mis des balises comme ```json)
+        const cleanedJsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+        // Parsing du JSON pour obtenir le tableau de questions
+        const quizData = JSON.parse(cleanedJsonText);
+        
+        return quizData;
+
+    } catch (error) {
+        console.error('Erreur fatale lors de la communication avec le serveur ou du traitement JSON:', error);
+        showError('Impossible de contacter le serveur ou de lire la réponse. Vérifiez le log du serveur et l\'URL.');
+        return null;
+    } finally {
+        showLoading(false);
+    }
+}
 
 const STRUCTURE = {
     // CORRECTION CLÉ : Pas d'accent dans Mathematiques
