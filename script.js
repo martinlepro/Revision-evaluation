@@ -476,96 +476,87 @@ async function startQuiz(quizType = 'mixte') {
 }
     
 /**
- * Appelle l'API Proxy pour générer UNE SEULE question à partir du contenu fourni.
- * @param {string} sourceContent - Le contenu du fichier chargé (matière de révision).
- * @param {string} quizType - Le type de question à générer ('mixte', 'qcm', 'paragraphe', etc.).
- * @param {string} sourceName - Le nom du fichier/sujet.
+ * Génère un ensemble complet de questions via un seul appel à l'API,
+ * en demandant un tableau JSON contenant toutes les questions requises.
+ * * @param {Array<Object>} selectedItems - La liste des sujets sélectionnés (name et path).
+ * @param {number} numberOfQuestions - Le nombre total de questions à générer.
+ * @param {string} quizType - Le type de quiz (mixte, qcm, paragraphe, etc.) pour guider l'IA.
+ * @returns {Array<Object>|null} Le tableau de questions complètes ou null en cas d'erreur.
  */
-async function generateRandomQuestionFromContent(sourceContent, quizType, sourceName) {
-    console.log(`Début de la génération de ${numberOfQuestions} questions pour le sujet: ${sourceName}`);
+async function generateRandomQuestionFromContent(selectedItems, numberOfQuestions, quizType) {
+    console.log(`Début de la génération de ${numberOfQuestions} questions de type ${quizType} pour ${selectedItems.length} sujet(s)`);
+    showLoading(true);
 
-    // --- 1. Définition des prompts ---
+    const subjectNames = selectedItems.map(item => item.name).join(', ');
+    const subjectPaths = selectedItems.map(item => item.path).join(', '); // Pour donner plus de contexte à l'IA
 
-    // Le prompt 'system' définit le rôle et le format de l'IA (format JSON requis par le client)
-// NOUVEAU PROMPT (pour un tableau de questions):
-const systemPrompt = `Vous êtes un générateur de quiz pour des élèves de 3e.Notez les comme au brevet Votre réponse DOIT être UNIQUEMENT un tableau JSON de ${numberOfQuestions} objets-questions, SANS aucun texte, commentaire, ou explication autour. Chaque objet du tableau doit avoir la structure suivante : { type: string ('mcq', 'short_answer', ou 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question) }.`;
-    
-    // Le prompt 'user' définit la tâche spécifique et fournit le contenu
-    let questionTypeInstruction = '';
-    let maxPoints = 5;
+    // --- 1. Définition des prompts (Adaptés à la demande d'un tableau JSON complet) ---
 
-    // Adaptez les instructions en fonction du type de quiz
+    // Le prompt 'system' définit le format de la réponse (tableau JSON de N objets)
+    const systemPrompt = `Vous êtes un générateur de quiz pour des élèves de 3e. Votre réponse DOIT être UNIQUEMENT un tableau JSON (format JSON array) de ${numberOfQuestions} objets QuizQuestion, SANS aucun texte, commentaire, ou explication autour (pas de balises ```json). Notez les questions comme au brevet. La structure de chaque objet QuizQuestion DOIT être : { type: string ('mcq', 'short_answer', ou 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question, 1 pour QCM/courte, 5 ou 10 pour rédaction) }.`;
+
+    // Le prompt 'user' définit la tâche spécifique (sujets + nombre de questions)
+    let userPrompt = `Générer un quiz complet de ${numberOfQuestions} questions de type "${quizType}" sur le(s) thème(s) suivant(s): "${subjectNames}".`;
+
     if (quizType === 'qcm') {
-        questionTypeInstruction = 'une question à choix multiples (mcq) avec 4 options.';
-        maxPoints = 1;
-    } else if (quizType === 'paragraphe') {
-        questionTypeInstruction = 'une question de rédaction (long_answer) nécessitant une réponse argumentée de plusieurs phrases.';
-        maxPoints = 10;
-    } else { // 'mixte' ou autre
-        questionTypeInstruction = 'une question de type aléatoire (mcq, short_answer ou long_answer).';
-        // Le type mixte généré par cette boucle n'est pas le 'mixte' initial de 5 questions (qui est en un seul appel), 
-        // mais une série d'appels pour chaque contenu chargé. On laisse l'IA choisir le type.
-        maxPoints = 5; // Valeur par défaut
+        userPrompt += " Toutes les questions doivent être à choix multiples (mcq), valant 1 point chacune, avec 4 options de réponse.";
+    } else if (quizType === 'paragraphe_ia') {
+        userPrompt += " Toutes les questions doivent être des questions de rédaction (long_answer), valant 10 points chacune.";
+    } else if (quizType === 'mixte') {
+        userPrompt += " Le quiz doit contenir un mélange équilibré de questions à choix multiples (mcq), à réponse courte (short_answer) et de rédaction (long_answer).";
     }
-
-    const userPrompt = `En utilisant ce contenu de révision : 
---- CONTENU DE RÉVISION ---
-${sourceContent}
---- FIN DU CONTENU ---
-Générez spécifiquement ${questionTypeInstruction} sur le sujet "${sourceName}". Assurez-vous d'utiliser uniquement les informations fournies dans le contenu de révision. La question doit valoir un maximum de ${maxPoints} points.`;
     
-    // --- 2. Construction du Payload pour le Proxy ---
+    userPrompt += ` Les sujets proviennent de ces documents: ${subjectPaths}.`;
 
-    // C'est cette structure qui est CRITIQUE et qui doit correspondre au serveur (server.js)
+
+    // --- 2. Construction du Payload pour le Proxy ---
     const payload = {
         prompt: {
             system: systemPrompt,
             user: userPrompt
         },
-        model: "gpt-4o-mini"
+        model: "gpt-4o-mini" // Utilisation de votre modèle
     };
 
     // --- 3. Appel à l'API ---
-
     try {
         const response = await fetch(GENERATION_API_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload) // Envoi du format correct
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
-        // Gestion des erreurs HTTP (400, 429, 500)
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ error: 'Réponse non-JSON du serveur proxy.', details: response.statusText }));
-            // L'erreur 400 que nous avions avant sera gérée ici si elle revient.
             console.error('Erreur API Génération:', response.status, JSON.stringify(errorData));
-            showError(`Erreur du serveur proxy (${response.status}) pour ${sourceName} : ${errorData.details || errorData.error || response.statusText}.`);
-            return; 
+            showError(`Erreur du serveur proxy (${response.status}) : ${errorData.details || errorData.error || response.statusText}.`);
+            return null; // Retourne null en cas d'erreur
         }
 
         const data = await response.json();
         
-        // Extraction du contenu JSON
-        if (!data.choices || data.choices.length === 0 || !data.choices[0].message || !data.choices[0].message.content) {
+        if (!data.choices || data.choices.length === 0) {
             console.error('Structure de réponse OpenAI invalide:', data);
-            showError(`L'API a répondu, mais la structure du quiz pour ${sourceName} est invalide.`);
-            return;
+            showError(`L'API a répondu, mais la structure du quiz est invalide.`);
+            return null;
         }
         
         const jsonText = data.choices[0].message.content.trim();
+        // Nettoyage des balises JSON si l'IA les a ajoutées
         const cleanedJsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
 
-        const questionData = JSON.parse(cleanedJsonText);
+        // Parsing du JSON pour obtenir le tableau de questions
+        const quizData = JSON.parse(cleanedJsonText);
         
-        // Ajout de la question au quiz général (cette partie est propre à votre logique)
-        currentQuizData.push(questionData);
-        console.info(`Question générée avec succès pour ${sourceName}. Type: ${questionData.type}.`);
+        console.log(`Quiz généré avec succès. Nombre de questions: ${quizData.length}`);
+        return quizData; // Renvoie le tableau complet
 
     } catch (error) {
-        console.error(`Erreur fatale lors de la génération de question pour ${sourceName}:`, error);
-        showError(`Impossible de contacter le serveur ou de lire la réponse (Erreur réseau/JSON) pour ${sourceName}.`);
+        console.error('Erreur fatale lors de la communication ou du traitement JSON:', error);
+        showError('Impossible de contacter le serveur ou de lire la réponse (Erreur réseau/JSON).');
+        return null;
+    } finally {
+        showLoading(false);
     }
 }
 
