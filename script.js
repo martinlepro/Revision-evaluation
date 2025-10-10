@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // CHANGEMENT CRITIQUE 2 : INITIALISATION DE L'ÉLÉMENT
     // L'affectation de la variable globale 'debugElement' est sécurisée ici
-    debugElement = document.getElementById('debug-log');
+    debugElement = document.getElementById('debug');
     
     // CHANGEMENT CRITIQUE 3 : AFFICHAGE DES LOGS DE VERSION
     if (debugElement) {
