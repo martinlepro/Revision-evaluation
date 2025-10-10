@@ -334,6 +334,10 @@ function parseMarkdown(text) {
 
 
 // --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
+// Définition des constantes pour le nombre de questions
+const MIN_QUESTIONS = 5;
+const MAX_QUESTIONS = 10;
+
 async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
     // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
@@ -363,19 +367,22 @@ async function startQuiz(quizType = 'mixte') {
 
     
     // ----------------------------------------------------------------------
-    // ÉTAPE 2 : PRÉPARATION (CHARGEMENT DE TOUT LE CONTENU AVANT LA GÉNÉRATION)
+    // ÉTAPE 2 : PRÉPARATION (CHARGEMENT ET CONCATÉNATION DE TOUT LE CONTENU)
     // ----------------------------------------------------------------------
     const loadedContents = [];
+    let allContent = ""; // <-- NOUVEAU : Contient tout le texte à envoyer à l'IA
+    
     for (const item of selectedItems) {
         if (quizType === 'dictation') {
             await generateDictationQuestion(item.path); 
-            break; 
+            break; // Sort de la boucle si c'est une dictée
         }
         
         // On charge le contenu de chaque fichier sélectionné
         const content = await fetchContent(item.path); 
         if (content) {
             loadedContents.push({ content: content, name: item.name });
+            allContent += `--- Contenu de ${item.name} ---\n${content}\n\n`; // CONCATÉNATION
             feedbackDiv.innerHTML = `<p class="info">Fichier pour **${item.name}** chargé.</p>`;
         }
     }
@@ -396,53 +403,39 @@ async function startQuiz(quizType = 'mixte') {
     }
 
 
-
-// ... (dans la fonction async function startQuiz(quizType = 'mixte'))
-
     // ----------------------------------------------------------------------
-    // ÉTAPE 3 : GÉNÉRATION ALÉATOIRE AVEC DÉLAI (POUR CONTOURNER LE RATE LIMIT)
+    // ÉTAPE 3 : GÉNÉRATION EN UN SEUL APPEL (RAPIDE)
     // ----------------------------------------------------------------------
     
-    // Détermine le nombre de questions à générer (entre MIN et MAX)
+    // Détermine le nombre de questions à générer aléatoirement (entre MIN et MAX)
     const questionsToGenerate = Math.floor(Math.random() * (MAX_QUESTIONS - MIN_QUESTIONS + 1)) + MIN_QUESTIONS;
-    feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer **${questionsToGenerate}** questions...</p>`;
     
-    // Boucle pour appeler l'IA le nombre de fois choisi
-    for (let i = 0; i < questionsToGenerate; i++) {
-        
-        // --- GESTION DU DÉLAI et du COLD START ---
-        
-        // Si c'est la première question, gérons le cold start (1.5s).
-        if (i === 0) {
-            feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render...</p>`;
-            await delay(1500); 
-        } else {
-            // Sinon, attente de 20s pour respecter le Rate Limit de 3 RPM
-            feedbackDiv.innerHTML = `<p class="warn">⏸️ Limite de débit atteinte (3 RPM). En attente de 20 secondes...</p>`;
-            console.warn("Pause de 20 secondes pour respecter la limite de débit OpenAI (3 RPM).");
-            await delay(20000); // 20 secondes d'attente
-        }
-        
-        feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer la question ${i + 1}/${questionsToGenerate}...</p>`;
+    // --- GESTION DU COLD START UNIQUE ---
+    feedbackDiv.innerHTML = `<p class="warn">⏸️ Initialisation du serveur Render (Cold Start)...</p>`;
+    await delay(1500); // Délai d'attente unique pour le cold start
+    
+    feedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer le quiz complet (**${questionsToGenerate}** questions)...</p>`;
 
-        // --- Début de la génération ---
-
-        // Sélectionne un sujet aléatoirement parmi les contenus PRÉCHARGÉS (loadedContents)
-        const randomIndex = Math.floor(Math.random() * loadedContents.length);
-        const source = loadedContents[randomIndex];
-
-        // Appelle la génération pour ce contenu
-        await generateRandomQuestionFromContent(source.content, quizType, source.name);
-    }
+    // Appel unique en envoyant TOUT le contenu et le nombre de questions
+    const questionsArray = await generateRandomQuestionFromContent(
+        allContent, 
+        quizType, 
+        selectedItems.map(i => i.name).join(', '),
+        questionsToGenerate 
+    );
+    
     // ----------------------------------------------------------------------
     // ÉTAPE 4 : AFFICHAGE FINAL
     // ----------------------------------------------------------------------
     isQuizRunning = false; 
     feedbackDiv.innerHTML = ''; 
 
-    if (currentQuizData.length > 0) {
+    if (questionsArray && questionsArray.length > 0) {
+        // Le quiz est généré en une seule fois
+        currentQuizData = questionsArray;
         displayCurrentQuestion();
     } else {
+        // En cas d'échec de la génération
         alert("L'IA n'a pu générer aucune question. Vérifiez votre serveur Render et votre connexion.");
         document.getElementById('quiz-view').style.display = 'none';
         document.getElementById('selection-view').style.display = 'block';
@@ -456,12 +449,13 @@ async function startQuiz(quizType = 'mixte') {
  * @param {string} sourceName - Le nom du fichier/sujet.
  */
 async function generateRandomQuestionFromContent(sourceContent, quizType, sourceName) {
-    console.log(`Début de la génération de question pour le sujet: ${sourceName}`);
+    console.log(`Début de la génération de ${numberOfQuestions} questions pour le sujet: ${sourceName}`);
 
     // --- 1. Définition des prompts ---
 
     // Le prompt 'system' définit le rôle et le format de l'IA (format JSON requis par le client)
-    const systemPrompt = `Vous êtes un générateur de questions de quiz d'histoire et de géographie pour des élèves de 3e, utilisant le contenu de révision fourni ci-dessous. Votre réponse DOIT être uniquement un objet JSON, SANS aucun texte d'introduction ou d'explication. L'objet doit avoir la structure suivante : { type: string ('mcq', 'short_answer', 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question) }.`;
+// NOUVEAU PROMPT (pour un tableau de questions):
+const systemPrompt = `Vous êtes un générateur de quiz pour des élèves de 3e.Notez les comme au brevet Votre réponse DOIT être UNIQUEMENT un tableau JSON de ${numberOfQuestions} objets-questions, SANS aucun texte, commentaire, ou explication autour. Chaque objet du tableau doit avoir la structure suivante : { type: string ('mcq', 'short_answer', ou 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question) }.`;
     
     // Le prompt 'user' définit la tâche spécifique et fournit le contenu
     let questionTypeInstruction = '';
