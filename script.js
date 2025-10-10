@@ -658,6 +658,48 @@ Générer un quiz complet de ${numberOfQuestions} questions de type "${quizType}
     }
 }
 
+/**
+ * Vérifie la réponse pour les questions à réponse courte ou longue.
+ * Met à jour le score et affiche l'explication.
+ */
+function checkFreeTextAnswer() {
+    const currentQuestion = currentQuizData[currentQuestionIndex];
+    const correctionFeedbackDiv = document.getElementById('correction-feedback');
+    const answerElement = document.getElementById('answer-box');
+    
+    if (!answerElement || answerElement.value.trim() === '') {
+        alert("Veuillez saisir votre réponse.");
+        return;
+    }
+
+    const userAnswer = answerElement.value.trim();
+    const correctAnswer = currentQuestion.answer;
+    const maxPoints = currentQuestion.maxPoints || 1;
+    let feedbackHTML = '';
+
+    // Pour l'instant, on ne fait que comparer la présence de mots-clés ou on montre la réponse
+    
+    feedbackHTML += `<p class="alert-info">ℹ️ **Réponse Attendue :** ${parseMarkdown(correctAnswer)}</p>`;
+    feedbackHTML += `<p>Explication : ${currentQuestion.explanation || "Aucune explication fournie par l'IA."}</p>`;
+    feedbackHTML += `<p class="alert-warning">💡 **Auto-Correction :** Pour ce type de question, vous devez vous auto-évaluer sur la base de la réponse attendue et de l'explication. Points possibles : ${maxPoints}.</p>`;
+
+    // Option : Vous pouvez ajouter ici un bouton pour attribuer les points manuellement.
+    // Pour l'instant, on n'ajoute pas de score automatiquement pour ces questions.
+    
+    correctionFeedbackDiv.innerHTML = feedbackHTML;
+    
+    // Désactiver la zone de texte
+    answerElement.disabled = true;
+
+    // Masquer le bouton de validation et afficher le bouton "Question Suivante"
+    const validateButton = document.querySelector('.paragraphe-sujet button');
+    if (validateButton) validateButton.style.display = 'none';
+
+    document.getElementById('next-question-btn').style.display = 'block';
+}
+
+// NOTE : Vous n'avez pas besoin de la fonction checkAnswer() (l'ancienne) si vous utilisez checkQCMAnswer() et checkFreeTextAnswer(). Vous pouvez la supprimer pour éviter la confusion.
+
 async function generateDictationQuestion(path) {
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
     generationFeedbackDiv.innerHTML = '<p class="info">⏳ Préparation de la dictée...</p>';
@@ -777,7 +819,7 @@ function displayCurrentQuestion() {
                             </label>
                         `).join('')}
                     </div>
-                    <button onclick="checkAnswer()">Valider la réponse</button>
+                    <button onclick="checkFreeTextAnswer()">Valider et Afficher la Correction</button>
                 </div>
             `;
             break;
