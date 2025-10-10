@@ -368,9 +368,6 @@ function parseMarkdown(text) {
 
 // --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
 // Définition des constantes pour le nombre de questions
-const MIN_QUESTIONS = 5;
-const MAX_QUESTIONS = 10;
-
 async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
     // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
