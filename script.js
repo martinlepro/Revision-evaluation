@@ -482,7 +482,7 @@ if (questionsArray && questionsArray.length > 0) {
 /**
  * Génère un ensemble complet de questions via un seul appel à l'API,
  * en demandant un tableau JSON contenant toutes les questions requises.
- * * @param {string} sourceContent - Le contenu de révision CONCATÉNÉ de tous les sujets sélectionnés.
+ * @param {string} sourceContent - Le contenu de révision CONCATÉNÉ de tous les sujets sélectionnés.
  * @param {string} quizType - Le type de quiz (mixte, qcm, paragraphe, etc.) pour guider l'IA.
  * @param {string} sourceNames - La liste des noms de sujets séparés par des virgules pour le contexte.
  * @param {number} numberOfQuestions - Le nombre total de questions à générer.
@@ -492,10 +492,10 @@ async function generateRandomQuestionFromContent(sourceContent, quizType, source
     console.log(`Début de la génération de ${numberOfQuestions} questions de type ${quizType} pour le(s) sujet(s) : ${sourceNames}`);
     showLoading(true);
 
-    // --- 1. Définition des prompts (Adaptés à la demande d'un tableau JSON complet) ---
+    // --- 1. Définition des prompts ---
 
-    // Le prompt 'system' force l'IA à renvoyer le tableau JSON COMPLET
-    const systemPrompt = `Vous êtes un générateur de quiz pour des élèves de 3e. Votre réponse DOIT être UNIQUEMENT un tableau JSON (format JSON array) de ${numberOfQuestions} objets QuizQuestion, SANS aucun texte, commentaire, ou explication autour (pas de balises ```json). Notez les questions comme au brevet. La structure de chaque objet QuizQuestion DOIT être : { type: string ('mcq', 'short_answer', ou 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question, 1 pour QCM/courte, 5 ou 10 pour rédaction) }.`;
+    // La ligne corrigée est ici (utilisation de \`\`\`json pour l'échappement)
+    const systemPrompt = `Vous êtes un générateur de quiz pour des élèves de 3e. Votre réponse DOIT être UNIQUEMENT un tableau JSON (format JSON array) de ${numberOfQuestions} objets QuizQuestion, SANS aucun texte, commentaire, ou explication autour (pas de balises \`\`\`json). Notez les questions comme au brevet. La structure de chaque objet QuizQuestion DOIT être : { type: string ('mcq', 'short_answer', ou 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question, 1 pour QCM/courte, 5 ou 10 pour rédaction) }.`;
 
     // Le prompt 'user' définit la tâche spécifique (sujets + nombre de questions + contenu)
     let userPrompt = `En utilisant ce contenu de révision : 
@@ -562,6 +562,7 @@ Générer un quiz complet de ${numberOfQuestions} questions de type "${quizType}
         showLoading(false);
     }
 }
+
 async function generateDictationQuestion(path) {
     const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
     generationFeedbackDiv.innerHTML = '<p class="info">⏳ Préparation de la dictée...</p>';
