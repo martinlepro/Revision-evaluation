@@ -242,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
     updateSelectedBox();
+    updateStartButtonsVisibility();
     
 }); // C'est la SEULE et UNIQUE fermeture de ce bloc.
 
@@ -270,6 +271,29 @@ function renderMenu() {
     }
     menuContainer.innerHTML = html;
 }
+
+// ... (Vos variables globales comme currentQuizData, selectedItems, etc.)
+
+// --- NOUVELLE FONCTION : GESTION DE L'INTERFACE DE DÉMARRAGE ---
+function updateStartButtonsVisibility() {
+    // Vérifie si le tableau des sujets sélectionnés n'est pas vide
+    const isItemSelected = selectedItems.length > 0; 
+    
+    // Sélectionne tous les boutons qui ont la classe 'start-btn'
+    const startButtons = document.querySelectorAll('.start-btn'); 
+    
+    // Met à jour l'attribut 'disabled' et l'opacité pour le feedback visuel
+    startButtons.forEach(button => {
+        button.disabled = !isItemSelected; 
+        button.style.opacity = isItemSelected ? 1.0 : 0.5;
+    });
+
+    // Mise à jour de la boîte de sélection visuelle
+    document.getElementById('selected-box').style.backgroundColor = isItemSelected ? '#d4edda' : '#e9ecef'; // Couleur verte si sélectionné
+    document.getElementById('selected-items').textContent = isItemSelected ? selectedItems.map(i => i.name).join(', ') : 'Aucun sujet sélectionné.';
+}
+
+// ... (Le reste de vos fonctions comme startQuiz, displayCurrentQuestion, etc.)
 
 function getItemPath(matiere, subMatiere, item) {
     // CORRECTION : On utilise SIMPLEMENT la valeur déjà formatée dans item.file
