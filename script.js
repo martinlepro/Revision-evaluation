@@ -311,6 +311,64 @@ function renderMenu() {
 
 // ... (Vos variables globales comme currentQuizData, selectedItems, etc.)
 
+/**
+ * Vérifie la réponse pour une question à choix multiples (QCM) ou Vrai/Faux.
+ * Met à jour le score de l'utilisateur et affiche la correction.
+ */
+function checkQCMAnswer() {
+    const currentQuestion = currentQuizData[currentQuestionIndex];
+    const correctionFeedbackDiv = document.getElementById('correction-feedback');
+    const questionType = currentQuestion.type ? currentQuestion.type.toLowerCase() : '';
+
+    // Détermine le nom de l'élément HTML (QCM ou Vrai/Faux)
+    const radioName = (questionType === 'qcm' || questionType === 'mcq') ? 'qcm_answer' : 'vrai_faux_answer';
+    
+    // Récupère l'option sélectionnée par l'utilisateur
+    const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
+    
+    if (!selectedRadio) {
+        alert("Veuillez sélectionner une option avant de valider la réponse !");
+        return;
+    }
+    
+    const userAnswer = selectedRadio.value;
+    const correctAnswer = currentQuestion.answer;
+    const maxPoints = currentQuestion.maxPoints || 1;
+    let feedbackHTML = '';
+    let isCorrect = false;
+
+    // Comparaison de la réponse
+    if (userAnswer.trim() === correctAnswer.trim()) {
+        isCorrect = true;
+        userScore += maxPoints;
+        feedbackHTML = `<p class="alert-success">✅ **Bonne réponse !** Vous gagnez ${maxPoints} point(s).</p>`;
+    } else {
+        feedbackHTML = `<p class="alert-danger">❌ **Mauvaise réponse.** Vous ne gagnez aucun point.</p>`;
+    }
+
+    // Affichage de la correction
+    feedbackHTML += `<p>La bonne réponse était : **${correctAnswer}**.</p>`;
+    feedbackHTML += `<p>Explication : ${currentQuestion.explanation || "Aucune explication fournie par l'IA."}</p>`;
+
+    correctionFeedbackDiv.innerHTML = feedbackHTML;
+    
+    // Désactiver tous les boutons radio après la validation pour éviter de changer la réponse
+    document.querySelectorAll(`input[name="${radioName}"]`).forEach(radio => {
+        radio.disabled = true;
+        // Met en évidence la bonne réponse
+        if (radio.value === correctAnswer) {
+            radio.parentElement.style.fontWeight = 'bold';
+            radio.parentElement.style.color = 'green';
+        }
+    });
+
+    // Masque le bouton de validation et affiche le bouton "Question Suivante"
+    const validateButton = document.querySelector(`div.${questionType}-question button`);
+    if (validateButton) validateButton.style.display = 'none';
+
+    document.getElementById('next-question-btn').style.display = 'block';
+}
+
 // --- NOUVELLE FONCTION : GESTION DE L'INTERFACE DE DÉMARRAGE ---
 function updateStartButtonsVisibility() {
     // Vérifie si le tableau des sujets sélectionnés n'est pas vide
