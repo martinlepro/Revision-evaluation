@@ -699,13 +699,18 @@ function displayCurrentQuestion() {
 
     const questionText = parseMarkdown(currentQuestion.question || currentQuestion.sujet || currentQuestion.text || '');
     
-    html += `<h3 style="margin-bottom: 20px; text-align: right;">Question ${currentQuestionIndex + 1} sur ${currentQuizData.length} (Source : ${currentQuestion.sourceName})</h3>`;
+    html += `<h3 style="margin-bottom: 20px; text-align: right;">Question ${currentQuestionIndex + 1} sur ${currentQuizData.length} (Source : ${currentQuestion.sourceName || 'Génération IA'})</h3>`;
 
-    switch (currentQuestion.type) {
+    // 🥳 CORRECTION CRITIQUE 1 : Utilisation de toLowerCase()
+    const questionType = currentQuestion.type ? currentQuestion.type.toLowerCase() : 'unknown';
+
+    switch (questionType) {
+        // 🥳 CORRECTION CRITIQUE 2 : Ajout de 'mcq' pour plus de tolérance
         case 'qcm':
+        case 'mcq':
             html += `
                 <div class="qcm-question">
-                    <h3>Question à Choix Multiples (Points: ${currentQuestion.points})</h3>
+                    <h3>Question à Choix Multiples (Points: ${currentQuestion.maxPoints || 1})</h3>
                     <p class="question-text">${questionText}</p>
                     <div class="options">
                         ${currentQuestion.options.map((option) => `
@@ -719,10 +724,26 @@ function displayCurrentQuestion() {
             `;
             break;
 
+        // 🥳 CORRECTION CRITIQUE 3 : Ajout des types 'short_answer' et 'long_answer'
+        case 'short_answer':
+        case 'long_answer':
+            // Ce cas gère les questions de type réponse courte ou rédaction sans utiliser l'API de correction pour l'instant.
+            // Il utilise le même affichage que votre ancien 'paragraphe_ia', mais sans l'API de correction complexe.
+            html += `
+                <div class="paragraphe-sujet">
+                    <h3>Question de Rédaction (Points: ${currentQuestion.maxPoints || (questionType === 'long_answer' ? 5 : 1)})</h3>
+                    <p class="question-text">${questionText}</p>
+                    <p style="font-style: italic; color: #555;">${questionType === 'long_answer' ? "Rédigez un paragraphe argumenté." : "Répondez en une ou deux phrases."}</p>
+                    <textarea id="answer-box" rows="${questionType === 'long_answer' ? 10 : 5}" placeholder="Votre réponse ici..."></textarea>
+                    <button onclick="checkAnswer()">Valider et Afficher la Correction</button>
+                    </div>
+            `;
+            break;
+
         case 'vrai_faux': 
             html += `
                 <div class="vrai-faux-question">
-                    <h3>Vrai ou Faux (Points: ${currentQuestion.points})</h3>
+                    <h3>Vrai ou Faux (Points: ${currentQuestion.maxPoints || 1})</h3>
                     <p class="question-text">${questionText}</p>
                     <div class="options">
                         <label>
@@ -738,13 +759,14 @@ function displayCurrentQuestion() {
             break;
 
         case 'paragraphe_ia':
+            // Ce cas gère votre ancien mode de correction IA avancée si vous le souhaitez
             html += `
                 <div class="paragraphe-sujet">
                     <h3>Sujet de Rédaction (Correction IA)</h3>
                     <p class="question-text">${questionText}</p>
-                    <p style="font-style: italic; color: #555;">**Attendus :** ${currentQuestion.attendus.join(' / ')}</p>
+                    <p style="font-style: italic; color: #555;">**Attendus :** ${currentQuestion.attendus ? currentQuestion.attendus.join(' / ') : 'Non spécifié.'}</p>
                     <textarea id="paragraphe-answer" rows="10" placeholder="Rédigez votre paragraphe ici..."></textarea>
-                    <button onclick="submitParagrapheIA('${currentQuestion.consigne_ia.replace(/'/g, "\\'")}')">Soumettre à l'IA</button>
+                    <button onclick="submitParagrapheIA('${currentQuestion.consigne_ia ? currentQuestion.consigne_ia.replace(/'/g, "\\'") : ''}')">Soumettre à l'IA</button>
                     <div id="paragraphe-correction-ia" class="feedback-box"></div>
                 </div>
             `;
@@ -753,7 +775,7 @@ function displayCurrentQuestion() {
         case 'spot_error': 
             html += `
                 <div class="spot-error-question">
-                    <h3>Trouver l'Erreur (Points: ${currentQuestion.points})</h3>
+                    <h3>Trouver l'Erreur (Points: ${currentQuestion.maxPoints || 5})</h3>
                     <p class="question-text">${questionText}</p>
                     <div class="error-text-box feedback-box" style="border: 2px dashed #dc3545; background-color: #f8d7da; margin-bottom: 15px;">
                         <p style="font-weight: bold; margin-bottom: 5px;">Énoncé à analyser :</p>
@@ -779,13 +801,13 @@ function displayCurrentQuestion() {
             break;
 
         default:
-            html = '<p class="error">Type de question inconnu.</p>';
+            // Affichage détaillé de l'erreur pour le débogage
+            html = `<p class="error">Type de question inconnu. Le type reçu de l'IA est: <strong>${currentQuestion.type}</strong>.</p>`;
             break;
     }
 
     questionContainer.innerHTML = html;
 }
-
 // --- FONCTIONS DE CORRECTION ---
 
 // Correction pour QCM et Vrai/Faux (non IA) - (Inchangée)
