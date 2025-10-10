@@ -449,84 +449,96 @@ async function startQuiz(quizType = 'mixte') {
     }
 }
     
-async function generateRandomQuestionFromContent(content, forcedType, sourceName) {
-    const generationFeedbackDiv = document.getElementById('ai-generation-feedback');
-    generationFeedbackDiv.innerHTML = `<p class="info">⏳ Contact de l'IA pour générer une question pour **${sourceName}**...</p>`;
-    
-    let questionTypesToGenerate = ['qcm', 'paragraphe_ia', 'vrai_faux', 'spot_error']; 
-    let contentType = forcedType === 'mixte' 
-        ? questionTypesToGenerate[Math.floor(Math.random() * questionTypesToGenerate.length)]
-        : forcedType;
+/**
+ * Appelle l'API Proxy pour générer UNE SEULE question à partir du contenu fourni.
+ * @param {string} sourceContent - Le contenu du fichier chargé (matière de révision).
+ * @param {string} quizType - Le type de question à générer ('mixte', 'qcm', 'paragraphe', etc.).
+ * @param {string} sourceName - Le nom du fichier/sujet.
+ */
+async function generateRandomQuestionFromContent(sourceContent, quizType, sourceName) {
+    console.log(`Début de la génération de question pour le sujet: ${sourceName}`);
 
-    let systemPrompt = `À partir du contenu de la leçon suivant, générez une seule question au format JSON. Votre rôle est d'être un générateur de questions pour un élève de 3e. Ne donnez aucun texte supplémentaire, seulement le JSON.`;
-    let userPrompt = `Contenu de la leçon:\n---\n${content}\n---\n`;
+    // --- 1. Définition des prompts ---
+
+    // Le prompt 'system' définit le rôle et le format de l'IA (format JSON requis par le client)
+    const systemPrompt = `Vous êtes un générateur de questions de quiz d'histoire et de géographie pour des élèves de 3e, utilisant le contenu de révision fourni ci-dessous. Votre réponse DOIT être uniquement un objet JSON, SANS aucun texte d'introduction ou d'explication. L'objet doit avoir la structure suivante : { type: string ('mcq', 'short_answer', 'long_answer'), question: string, options: array (liste des choix pour mcq, vide sinon), answer: string (la bonne réponse), explanation: string (explication courte), maxPoints: number (points pour la question) }.`;
     
-    // Contraintes pour le type de question
-    if (contentType === 'qcm') {
-        systemPrompt += ` Le format JSON doit être: {"type": "qcm", "question": "...", "options": ["...", "...", "...", "..."], "correct_answer": "...", "points": 1}`;
-        userPrompt += `Générez une question à choix multiples (QCM) de niveau 3e avec 4 options.`;
-    } else if (contentType === 'paragraphe_ia') {
-        systemPrompt += ` Le format JSON doit être: {"type": "paragraphe_ia", "sujet": "...", "attendus": ["..."], "consigne_ia": "..."}`;
-        userPrompt += `Générez un sujet de paragraphe argumenté ou de développement construit. La clé "consigne_ia" est une instruction détaillée pour le correcteur IA.`;
-    } else if (contentType === 'vrai_faux') {
-        systemPrompt += ` Le format JSON doit être: {"type": "vrai_faux", "question": "...", "correct_answer": "Vrai" ou "Faux", "points": 1}`;
-        userPrompt += `Générez une question Vrai/Faux. La réponse doit être strictement "Vrai" ou "Faux" (avec une majuscule).`;
-    } else if (contentType === 'spot_error') { // NOUVEAU TYPE
-        systemPrompt += ` Le format JSON doit être: {"type": "spot_error", "question": "...", "texte_avec_erreur": "...", "correct_answer": "...", "points": 3}`;
-        userPrompt += `Générez une question de type 'Trouver l'erreur' sur la leçon. La clé "texte_avec_erreur" doit contenir une phrase ou un énoncé qui semble correct mais contient UNE SEULE erreur factuelle ou de définition. La clé "correct_answer" doit contenir la correction complète et détaillée.`;
-    } else {
-        console.error("Type de question invalide pour la génération aléatoire:", contentType);
-        generationFeedbackDiv.innerHTML = '<p class="error">❌ Type de question IA invalide.</p>';
-        return;
+    // Le prompt 'user' définit la tâche spécifique et fournit le contenu
+    let questionTypeInstruction = '';
+    let maxPoints = 5;
+
+    // Adaptez les instructions en fonction du type de quiz
+    if (quizType === 'qcm') {
+        questionTypeInstruction = 'une question à choix multiples (mcq) avec 4 options.';
+        maxPoints = 1;
+    } else if (quizType === 'paragraphe') {
+        questionTypeInstruction = 'une question de rédaction (long_answer) nécessitant une réponse argumentée de plusieurs phrases.';
+        maxPoints = 10;
+    } else { // 'mixte' ou autre
+        questionTypeInstruction = 'une question de type aléatoire (mcq, short_answer ou long_answer).';
+        // Le type mixte généré par cette boucle n'est pas le 'mixte' initial de 5 questions (qui est en un seul appel), 
+        // mais une série d'appels pour chaque contenu chargé. On laisse l'IA choisir le type.
+        maxPoints = 5; // Valeur par défaut
     }
-    userPrompt += ` De plus, cette unique question doit faire partie d'un quiz dont le total doit être de **${TARGET_QUIZ_POINTS} points** et le nombre total de questions sera compris entre ${MIN_QUESTIONS} et ${MAX_QUESTIONS}. Définissez un barème en points cohérent pour cette question unique.`;
+
+    const userPrompt = `En utilisant ce contenu de révision : 
+--- CONTENU DE RÉVISION ---
+${sourceContent}
+--- FIN DU CONTENU ---
+Générez spécifiquement ${questionTypeInstruction} sur le sujet "${sourceName}". Assurez-vous d'utiliser uniquement les informations fournies dans le contenu de révision. La question doit valoir un maximum de ${maxPoints} points.`;
+    
+    // --- 2. Construction du Payload pour le Proxy ---
+
+    // C'est cette structure qui est CRITIQUE et qui doit correspondre au serveur (server.js)
+    const payload = {
+        prompt: {
+            system: systemPrompt,
+            user: userPrompt
+        },
+        model: "gpt-4o-mini"
+    };
+
+    // --- 3. Appel à l'API ---
+
     try {
         const response = await fetch(GENERATION_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // On envoie un format simple d'objets pour le proxy. Le serveur se chargera de la structure OpenAI.
-            body: JSON.stringify({ systemPrompt, userPrompt, model: "gpt-4o-mini" }) 
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload) // Envoi du format correct
         });
 
-        const aiData = await response.json();
-        
-        if (aiData.error) { throw new Error(aiData.error.details || aiData.error); }
-        
-        if (aiData.generated_content) {
-            // Nettoyage de la réponse pour extraire le JSON (nécessaire avec la plupart des modèles)
-            const jsonString = aiData.generated_content.replace(/```json|```/g, '').trim();
-            const generatedQuestion = JSON.parse(jsonString);
-            
-            if (generatedQuestion.type === contentType) {
-                generatedQuestion.sourceName = sourceName;
-                currentQuizData.push(generatedQuestion);
-                
-                if (generatedQuestion.points) {
-                    totalQuizPoints += generatedQuestion.points;
-                }
-                
-                generationFeedbackDiv.innerHTML = `<p class="correct">✅ Question de type **${contentType}** pour **${sourceName}** générée.</p>`;
-            } else {
-                 generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA a généré un type de contenu inattendu.</p>';
-                 console.error("Type de contenu généré par l'IA ne correspond pas au type demandé. Attendu:", contentType, "Reçu:", generatedQuestion.type);
-            }
-        } else {
-            console.error("Réponse de l'API de génération incomplète ou mal formée:", aiData);
-            generationFeedbackDiv.innerHTML = '<p class="error">❌ L\'IA n\'a pas pu générer le contenu. Réponse inattendue du serveur.</p>';
+        // Gestion des erreurs HTTP (400, 429, 500)
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Réponse non-JSON du serveur proxy.', details: response.statusText }));
+            // L'erreur 400 que nous avions avant sera gérée ici si elle revient.
+            console.error('Erreur API Génération:', response.status, JSON.stringify(errorData));
+            showError(`Erreur du serveur proxy (${response.status}) pour ${sourceName} : ${errorData.details || errorData.error || response.statusText}.`);
+            return; 
         }
 
-} catch (error) {
-        console.error("Erreur critique (Réseau/Analyse) :", error);
+        const data = await response.json();
         
-        // Journalisation améliorée dans le debugElement
-        let errorMessage = error.message || "Erreur inconnue.";
-        
-        // Ajout d'une vérification pour les erreurs de réseau/timeout
-        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-            errorMessage = "Erreur Réseau (Timeout Render ?). Le serveur n'a pas répondu à temps.";
+        // Extraction du contenu JSON
+        if (!data.choices || data.choices.length === 0 || !data.choices[0].message || !data.choices[0].message.content) {
+            console.error('Structure de réponse OpenAI invalide:', data);
+            showError(`L'API a répondu, mais la structure du quiz pour ${sourceName} est invalide.`);
+            return;
         }
         
-        generationFeedbackDiv.innerHTML = `<p class="error">❌ Échec critique : ${errorMessage.substring(0, 100)}...</p>`;
+        const jsonText = data.choices[0].message.content.trim();
+        const cleanedJsonText = jsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+
+        const questionData = JSON.parse(cleanedJsonText);
+        
+        // Ajout de la question au quiz général (cette partie est propre à votre logique)
+        currentQuizData.push(questionData);
+        console.info(`Question générée avec succès pour ${sourceName}. Type: ${questionData.type}.`);
+
+    } catch (error) {
+        console.error(`Erreur fatale lors de la génération de question pour ${sourceName}:`, error);
+        showError(`Impossible de contacter le serveur ou de lire la réponse (Erreur réseau/JSON) pour ${sourceName}.`);
     }
 }
 
