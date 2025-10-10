@@ -312,8 +312,17 @@ function toggleSelection(checkbox) {
     } else {
         selectedItems = selectedItems.filter(item => item.path !== path);
     }
+    
     console.log("Sélection mise à jour. Total:", selectedItems.length);
+    
+    // Vous avez deux fonctions pour mettre à jour l'affichage :
+    // updateSelectedBox() met à jour le texte de la sélection.
+    // updateStartButtonsVisibility() met à jour l'état des boutons.
+    
     updateSelectedBox();
+    
+    // 🚨 AJOUTEZ CETTE LIGNE :
+    updateStartButtonsVisibility();
 }
 
 function updateSelectedBox() {
