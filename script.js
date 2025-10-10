@@ -463,10 +463,17 @@ async function startQuiz(quizType = 'mixte') {
     isQuizRunning = false; 
     feedbackDiv.innerHTML = ''; 
 
-    if (questionsArray && questionsArray.length > 0) {
-        // Le quiz est généré en une seule fois
-        currentQuizData = questionsArray;
-        displayCurrentQuestion();
+// ... dans l'Étape 4 de votre startQuiz ...
+
+if (questionsArray && questionsArray.length > 0) {
+    // Le quiz est généré en une seule fois
+    currentQuizData = questionsArray;
+    
+    // 🚨 AJOUTEZ CETTE LIGNE : Calcule le score total en additionnant les maxPoints de chaque question
+    totalQuizPoints = currentQuizData.reduce((sum, q) => sum + (q.maxPoints || 1), 0);
+    console.log(`Score total possible pour le quiz: ${totalQuizPoints} points.`);
+    
+    displayCurrentQuestion();
     } else {
         // En cas d'échec de la génération
         alert("L'IA n'a pu générer aucune question. Vérifiez votre serveur Render et votre connexion.");
