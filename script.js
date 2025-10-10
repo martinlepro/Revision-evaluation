@@ -39,6 +39,43 @@ function appendToDebug(message, type = 'log') {
     }
 }
 
+// --- FONCTIONS UTILITAIRES POUR L'INTERFACE ET LE CHARGEMENT ---
+
+/**
+ * Affiche ou masque l'état de chargement dans le pied de page du quiz.
+ * @param {boolean} isLoading - True pour afficher, False pour masquer.
+ */
+function showLoading(isLoading) {
+    const feedbackDiv = document.getElementById('ai-generation-feedback');
+    
+    // Si la génération est terminée (isLoading = false), on vide le message.
+    if (!isLoading) {
+        feedbackDiv.innerHTML = '';
+    } 
+    // Note : Le message de chargement détaillé est déjà géré par startQuiz,
+    // donc cette fonction sert principalement de drapeau d'état pour la fin.
+}
+
+/**
+ * Affiche un message d'erreur dans l'interface et dans la console de débogage.
+ * @param {string} message - Le message d'erreur à afficher.
+ */
+function showError(message) {
+    const feedbackDiv = document.getElementById('ai-generation-feedback');
+    
+    // Affichage dans le feedback box
+    feedbackDiv.innerHTML = `<p class="error" style="color: #dc3545; font-weight: bold;">🚨 ERREUR : ${message}</p>`;
+
+    // Si la fonction appendToDebug existe, on l'utilise
+    if (typeof appendToDebug === 'function') {
+        appendToDebug(`[AFFICHAGE UTILISATEUR] ${message}`, 'error');
+    }
+}
+
+/**
+ * Fonction utilitaire pour créer un délai (utilisée pour simuler le cold start).
+ * @param {number} ms - Le temps de pause en millisecondes.
+ */
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
