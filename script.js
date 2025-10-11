@@ -426,18 +426,21 @@ function getItemPath(matiere, subMatiere, item) {
 // --- Nouvelle Fonction : GESTION DU STYLE ET DES DONNÉES ---
 
 function toggleSelection(checkbox) {
-    // 1. GÉRER LE STYLE VISUEL (Ceci est la partie manquante !)
-    // Trouve l'élément <li> parent le plus proche, qui est le conteneur du style 'selected'
+    // 1. GÉRER LE STYLE VISUEL (Corrige le problème de couleur/bouton "pas normal")
+    // Trouve l'élément <li> parent le plus proche, où la classe 'selected' est appliquée
     const listItem = checkbox.closest('li');
     
     if (listItem) {
-        // Applique ou retire la classe 'selected' pour changer la couleur
+        // Applique ou retire la classe 'selected' pour changer la couleur du fond
         if (checkbox.checked) {
             listItem.classList.add('selected');
         } else {
             listItem.classList.remove('selected');
         }
     }
+
+    // 2. GÉRER LES DONNÉES (Ceci est la correction du bug initial "Veuillez choisir un sujet")
+    // Elle appelle la fonction qui lit le DOM et remplit le tableau 'selectedItems'.
     updateSelectedBox(); 
 }
 
