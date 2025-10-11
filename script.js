@@ -441,6 +441,9 @@ function toggleSelection(checkbox) {
 }
 
 // Variable globale (assurez-vous que cette ligne est en haut du script)
+// DANS script.js
+// Assurez-vous que 'selectedItems' est déclaré globalement : let selectedItems = [];
+
 function updateSelectedBox() {
     // 1. Lire toutes les checkboxes COCHÉES sur la page
     const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
@@ -450,7 +453,7 @@ function updateSelectedBox() {
     const selectedNames = [];
 
     checkboxes.forEach(checkbox => {
-        // Le data-path et data-name sont des attributs que vous avez ajoutés dans renderMenu
+        // Ces data-attributs sont CRITIQUES. Ils doivent être présents sur vos checkboxes.
         const path = checkbox.dataset.path; 
         const name = checkbox.dataset.name; 
 
@@ -464,16 +467,13 @@ function updateSelectedBox() {
     // 3. Mettre à jour l'affichage dans la boîte de sélection
     const selectedItemsSpan = document.getElementById('selected-items');
     if (selectedNames.length > 0) {
-        // Affiche la liste des sujets sélectionnés
         selectedItemsSpan.innerHTML = selectedNames.map(item => `<b>${item}</b>`).join(', ');
     } else {
         selectedItemsSpan.textContent = 'Aucun sujet sélectionné.';
     }
     
-    // Le console.log permet de vérifier si le tableau se remplit :
     console.info("Sélection mise à jour. Total:", selectedItems.length);
 }
-
 // --- FONCTION DE RÉCUPÉRATION DU CONTENU RÉEL DES FICHIERS ---
 async function fetchContent(path) {
     // path est maintenant le chemin complet de la STRUCTURE (ex: "Mathematiques/T1_STATISTIQUES/Statistiques.txt")
