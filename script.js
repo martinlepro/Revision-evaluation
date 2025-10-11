@@ -902,6 +902,18 @@ async function submitTextAnswer() {
 // (Même logique d'affichage que précédemment, Spot Error est géré)
 
 function displayCurrentQuestion() {
+    // DANS function displayCurrentQuestion()
+
+    // Ligne CRITIQUE : Masquer le bouton de validation de la question précédente (s'il existe)
+    const validateButton = document.getElementById('validate-answer-btn'); 
+    if (validateButton) {
+        validateButton.style.display = 'none'; 
+    }
+    
+    // Assurez-vous aussi que la zone de feedback est vide au début de la nouvelle question
+    document.getElementById('correction-feedback').innerHTML = '';
+
+    // ... (Le reste de votre fonction pour afficher la nouvelle question)
     if (currentQuestionIndex >= currentQuizData.length) {
         showFinalScore();
         return;
