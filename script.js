@@ -776,6 +776,74 @@ async function generateAndPlayTTS(text) {
     }
 }
 
+/**
+ * Soumet la réponse de l'utilisateur à l'IA pour une correction détaillée
+ * pour les questions à réponse courte ou longue.
+ */
+async function submitTextAnswer() {
+    const currentQuestion = currentQuizData[currentQuestionIndex];
+    const correctionFeedbackDiv = document.getElementById('correction-feedback');
+    const answerElement = document.getElementById('answer-box');
+    const validateButton = document.querySelector('.paragraphe-sujet button');
+    
+    if (!answerElement || answerElement.value.trim() === '') {
+        alert("Veuillez saisir votre réponse.");
+        return;
+    }
+
+    const userAnswer = answerElement.value.trim();
+    const correctAnswer = currentQuestion.answer;
+    const maxPoints = currentQuestion.maxPoints || 1;
+    const questionText = currentQuestion.question;
+
+    // 1. Démarrer l'état de chargement
+    validateButton.disabled = true;
+    validateButton.textContent = '⏳ Correction en cours...';
+    correctionFeedbackDiv.innerHTML = '<p class="info">Analyse de votre réponse par l\'IA...</p>';
+
+    try {
+        const payload = {
+            userAnswer: userAnswer,
+            correctAnswer: correctAnswer,
+            questionText: questionText,
+            maxPoints: maxPoints
+        };
+
+        const response = await fetch(CORRECTION_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Erreur réseau ou du serveur de correction.');
+
+        const data = await response.json();
+
+        // 2. Traitement du résultat de l'IA
+        if (data.score && data.feedback) {
+            const scoreObtained = parseFloat(data.score) || 0;
+            userScore += scoreObtained;
+
+            let feedbackHTML = `<p class="alert-info">✅ **Correction IA :**</p>`;
+            feedbackHTML += `<p>Score obtenu : **${scoreObtained.toFixed(2)} / ${maxPoints} points**</p>`;
+            feedbackHTML += `<div style="padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">${parseMarkdown(data.feedback)}</div>`;
+            feedbackHTML += `<p>Réponse attendue : ${parseMarkdown(currentQuestion.answer)}</p>`;
+            
+            correctionFeedbackDiv.innerHTML = feedbackHTML;
+        } else {
+            correctionFeedbackDiv.innerHTML = '<p class="error">❌ Erreur : L\'IA n\'a pas renvoyé un format de correction valide.</p>';
+        }
+
+    } catch (error) {
+        console.error("Erreur de correction IA :", error);
+        correctionFeedbackDiv.innerHTML = `<p class="error">❌ Erreur lors de la correction : ${error.message}.</p>`;
+    } finally {
+        // 3. Finalisation de l'interface
+        answerElement.disabled = true;
+        validateButton.style.display = 'none';
+        document.getElementById('next-question-btn').style.display = 'block';
+    }
+}
 
 // --- FONCTIONS D'AFFICHAGE DU QUIZ (Spot Error inclus) ---
 // (Même logique d'affichage que précédemment, Spot Error est géré)
@@ -825,20 +893,17 @@ function displayCurrentQuestion() {
             break;
 
         // 🥳 CORRECTION CRITIQUE 3 : Ajout des types 'short_answer' et 'long_answer'
-        case 'short_answer':
-        case 'long_answer':
-            // Ce cas gère les questions de type réponse courte ou rédaction sans utiliser l'API de correction pour l'instant.
-            // Il utilise le même affichage que votre ancien 'paragraphe_ia', mais sans l'API de correction complexe.
-            html += `
-                <div class="paragraphe-sujet">
-                    <h3>Question de Rédaction (Points: ${currentQuestion.maxPoints || (questionType === 'long_answer' ? 5 : 1)})</h3>
-                    <p class="question-text">${questionText}</p>
-                    <p style="font-style: italic; color: #555;">${questionType === 'long_answer' ? "Rédigez un paragraphe argumenté." : "Répondez en une ou deux phrases."}</p>
-                    <textarea id="answer-box" rows="${questionType === 'long_answer' ? 10 : 5}" placeholder="Votre réponse ici..."></textarea>
-                    <button onclick="checkAnswer()">Valider et Afficher la Correction</button>
-                    </div>
-            `;
-            break;
+    case 'short_answer':
+    case 'long_answer':
+        // C'est ICI que l'appel est défini dans le HTML généré !
+        html += `
+            <div class="paragraphe-sujet">
+                <textarea id="answer-box" rows="${questionType === 'long_answer' ? 10 : 5}" placeholder="Votre réponse ici..."></textarea>
+                
+                <button onclick="submitTextAnswer()">Soumettre à l'IA pour correction</button> 
+            </div>
+        `;
+        break;
 
         case 'vrai_faux': 
             html += `
