@@ -271,12 +271,32 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMenu();
 
     // Associer les boutons de type de quiz aux fonctions
-    document.getElementById('start-quiz-btn').addEventListener('click', () => startQuiz('mixte'));
-    document.getElementById('start-qcm-btn').addEventListener('click', () => startQuiz('qcm'));
-    document.getElementById('start-paragraphe-btn').addEventListener('click', () => startQuiz('paragraphe_ia'));
-    document.getElementById('start-dictation-btn').addEventListener('click', () => startQuiz('dictation'));
-    document.getElementById('start-spot-error-btn').addEventListener('click', () => startQuiz('spot_error')); // Nouveau bouton
+// --- Initialisation des Boutons de Démarrage ---
 
+    document.getElementById('start-quiz-btn').addEventListener('click', () => {
+    // 1. Bouton "Mixte"
+    startQuiz('mixte'); 
+});
+
+    document.getElementById('start-qcm-btn').addEventListener('click', () => {
+    // 2. Bouton "QCM"
+    startQuiz('qcm'); 
+});
+
+    document.getElementById('start-paragraphe-btn').addEventListener('click', () => {
+    // 3. Bouton "Paragraphe"
+    startQuiz('paragraphe'); 
+});
+
+    document.getElementById('start-dictation-btn').addEventListener('click', () => {
+    // 4. Bouton "Dictée"
+    startQuiz('dictation'); 
+});
+
+    document.getElementById('start-spot-error-btn').addEventListener('click', () => {
+    // 5. Bouton "Trouver l'Erreur" (Hypothèse du type 'spot_error')
+    startQuiz('spot_error'); 
+});
     document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
     updateSelectedBox();
     updateStartButtonsVisibility();
@@ -467,6 +487,7 @@ async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
     // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
     // ----------------------------------------------------------------------
+
     // Masquer la vue de sélection et afficher la vue du quiz
     document.getElementById('selection-view').style.display = 'none';
     
