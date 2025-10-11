@@ -440,13 +440,38 @@ function toggleSelection(checkbox) {
     updateStartButtonsVisibility();
 }
 
+// Variable globale (assurez-vous que cette ligne est en haut du script)
 function updateSelectedBox() {
+    // 1. Lire toutes les checkboxes COCHÉES sur la page
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    
+    // 2. Vider et remplir le tableau global 'selectedItems'
+    selectedItems = [];
+    const selectedNames = [];
+
+    checkboxes.forEach(checkbox => {
+        // Le data-path et data-name sont des attributs que vous avez ajoutés dans renderMenu
+        const path = checkbox.dataset.path; 
+        const name = checkbox.dataset.name; 
+
+        if (path && name) {
+            // Remplir le tableau global qui est vérifié par startQuiz
+            selectedItems.push({ path: path, name: name });
+            selectedNames.push(name);
+        }
+    });
+
+    // 3. Mettre à jour l'affichage dans la boîte de sélection
     const selectedItemsSpan = document.getElementById('selected-items');
-    if (selectedItems.length === 0) {
-        selectedItemsSpan.textContent = 'Aucun sujet sélectionné.';
+    if (selectedNames.length > 0) {
+        // Affiche la liste des sujets sélectionnés
+        selectedItemsSpan.innerHTML = selectedNames.map(item => `<b>${item}</b>`).join(', ');
     } else {
-        selectedItemsSpan.innerHTML = selectedItems.map(item => `**${item.name}**`).join(', ');
+        selectedItemsSpan.textContent = 'Aucun sujet sélectionné.';
     }
+    
+    // Le console.log permet de vérifier si le tableau se remplit :
+    console.info("Sélection mise à jour. Total:", selectedItems.length);
 }
 
 // --- FONCTION DE RÉCUPÉRATION DU CONTENU RÉEL DES FICHIERS ---
