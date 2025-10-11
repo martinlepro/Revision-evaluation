@@ -467,6 +467,13 @@ async function startQuiz(quizType = 'mixte') {
     // ----------------------------------------------------------------------
     // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
     // ----------------------------------------------------------------------
+    // Masquer la vue de sélection et afficher la vue du quiz
+    document.getElementById('selection-view').style.display = 'none';
+    
+    // NOUVELLE LIGNE CRITIQUE : Masquer la zone des boutons de démarrage
+    document.getElementById('start-buttons').style.display = 'none'; 
+    
+    document.getElementById('quiz-view').style.display = 'block';
     if (selectedItems.length === 0) {
         alert("Veuillez sélectionner au moins un sujet de révision.");
         return;
