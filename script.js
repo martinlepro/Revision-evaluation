@@ -313,8 +313,6 @@ function renderMenu() {
             STRUCTURE[matiere][subMatiere].forEach(item => {
                 const path = getItemPath(matiere, subMatiere, item);
                 const isSelected = selectedItems.some(sel => sel.path === path);
-                
-                // C'est cette structure qui est la plus propre et cliquable
                 html += `
                     <li>
                         <label>
@@ -322,7 +320,7 @@ function renderMenu() {
                                 type="checkbox" 
                                 data-path="${path}" 
                                 data-name="${item.name}" 
-                                onchange="updateSelectedBox()" 
+                                onchange="toggleSelection(this)" // <-- Rétablir cet appel !
                                 ${isSelected ? 'checked' : ''}
                             >
                             ${item.name} (${item.type || 'Fichier'})
@@ -425,28 +423,22 @@ function getItemPath(matiere, subMatiere, item) {
     return item.file;
 }
 
+// --- Nouvelle Fonction : GESTION DU STYLE ET DES DONNÉES ---
+
 function toggleSelection(checkbox) {
-    const path = checkbox.getAttribute('data-path');
-    const name = checkbox.getAttribute('data-name');
+    // 1. GÉRER LE STYLE VISUEL (Ceci est la partie manquante !)
+    // Trouve l'élément <li> parent le plus proche, qui est le conteneur du style 'selected'
+    const listItem = checkbox.closest('li');
     
-    if (checkbox.checked) {
-        if (!selectedItems.some(item => item.path === path)) {
-            selectedItems.push({ path, name });
+    if (listItem) {
+        // Applique ou retire la classe 'selected' pour changer la couleur
+        if (checkbox.checked) {
+            listItem.classList.add('selected');
+        } else {
+            listItem.classList.remove('selected');
         }
-    } else {
-        selectedItems = selectedItems.filter(item => item.path !== path);
     }
-    
-    console.log("Sélection mise à jour. Total:", selectedItems.length);
-    
-    // Vous avez deux fonctions pour mettre à jour l'affichage :
-    // updateSelectedBox() met à jour le texte de la sélection.
-    // updateStartButtonsVisibility() met à jour l'état des boutons.
-    
-    updateSelectedBox();
-    
-    // 🚨 AJOUTEZ CETTE LIGNE :
-    updateStartButtonsVisibility();
+    updateSelectedBox(); 
 }
 
 // Variable globale (assurez-vous que cette ligne est en haut du script)
