@@ -313,22 +313,31 @@ function renderMenu() {
             STRUCTURE[matiere][subMatiere].forEach(item => {
                 const path = getItemPath(matiere, subMatiere, item);
                 const isSelected = selectedItems.some(sel => sel.path === path);
+                
+                // C'est cette structure qui est la plus propre et cliquable
                 html += `
-    <div class="menu-item-content">
-        <input 
-            type="checkbox" 
-            id="cb-${itemId}" 
-            data-path="${item.file}" 
-            data-name="${item.name}"
-            onchange="updateSelectedBox()"  // L'appel onchange est plus simple que l'onclick ici.
-        >
-        <label for="cb-${itemId}">${item.name} (${item.type})</label>
-    </div>
-`;
+                    <li>
+                        <label>
+                            <input 
+                                type="checkbox" 
+                                data-path="${path}" 
+                                data-name="${item.name}" 
+                                onchange="updateSelectedBox()" 
+                                ${isSelected ? 'checked' : ''}
+                            >
+                            ${item.name} (${item.type || 'Fichier'})
+                        </label>
+                    </li>
+                `;
+            });
+            html += `</ul></div>`;
+        }
+        html += `</div>`;
     }
     menuContainer.innerHTML = html;
+    // La fonction updateSelectedBox() doit être appelée ici après le chargement du menu.
+    updateSelectedBox(); 
 }
-
 // ... (Vos variables globales comme currentQuizData, selectedItems, etc.)
 
 /**
