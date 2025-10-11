@@ -314,17 +314,17 @@ function renderMenu() {
                 const path = getItemPath(matiere, subMatiere, item);
                 const isSelected = selectedItems.some(sel => sel.path === path);
                 html += `
-                    <li>
-                        <label>
-                            <input type="checkbox" data-path="${path}" data-name="${item.name}" onchange="toggleSelection(this)" ${isSelected ? 'checked' : ''}>
-                            ${item.name}
-                        </label>
-                    </li>
-                `;
-            });
-            html += `</ul></div>`;
-        }
-        html += `</div>`;
+    <div class="menu-item-content">
+        <input 
+            type="checkbox" 
+            id="cb-${itemId}" 
+            data-path="${item.file}" 
+            data-name="${item.name}"
+            onchange="updateSelectedBox()"  // L'appel onchange est plus simple que l'onclick ici.
+        >
+        <label for="cb-${itemId}">${item.name} (${item.type})</label>
+    </div>
+`;
     }
     menuContainer.innerHTML = html;
 }
