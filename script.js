@@ -9,7 +9,7 @@ let debugElement = null;
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
-const VERSION_INFO = "v1.5 - Correction Cold Start et Logs - 07/10/2025 à 09:10"; 
+const VERSION_INFO = "v15 - Correction Cold Start et Logs - 11/10/2025 à 18:19"; 
 
 // Les appels console.info sont maintenant DÉPLACÉS dans le bloc DOMContentLoaded !
 
