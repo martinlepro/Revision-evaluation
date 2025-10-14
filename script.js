@@ -250,58 +250,72 @@ const STRUCTURE = {
     }
 };
 
-// --- FONCTIONS DE DÉMARRAGE ET DE CHARGEMENT ---
+// Début du fichier script (14).js
 
-// --- FONCTIONS DE DÉMARRAGE ET DE CHARGEMENT ---
+// (Vos variables globales comme debugElement, originalConsoleLog, VERSION_INFO...)
 
+// --- DÉBUT DU BLOC UNIQUE DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // CHANGEMENT CRITIQUE 2 : INITIALISATION DE L'ÉLÉMENT
-    // L'affectation de la variable globale 'debugElement' est sécurisée ici
-    debugElement = document.getElementById('debug');
-    
-    // CHANGEMENT CRITIQUE 3 : AFFICHAGE DES LOGS DE VERSION
-    if (debugElement) {
-        // Ces logs s'affichent maintenant DANS votre console de débogage !
-        console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
-        console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
-        console.log("script.js chargé. Logging personnalisé actif.");
-    }
+    
+    // 1. INITIALISATION DE L'ÉLÉMENT DE DÉBOGAGE
+    debugElement = document.getElementById('debug');
+    
+    // 2. AFFICHAGE DES LOGS DE VERSION DANS LA CONSOLE
+    if (debugElement) {
+        console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
+        console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
+        console.log("script.js chargé. Logging personnalisé actif.");
+    }
 
-    renderMenu();
+    // 3. RENDU DU MENU (DOIT ÊTRE FAIT AVANT D'ASSOCIER LES ÉCOUTEURS DE CLIC)
+    renderMenu();
 
-    // Associer les boutons de type de quiz aux fonctions
-// --- Initialisation des Boutons de Démarrage ---
+    // 4. ASSOCIATION DES BOUTONS DE DÉMARRAGE (LA VRAIE CORRECTION)
+    console.log("Configuration des boutons de quiz...");
 
-    document.getElementById('start-quiz-btn').addEventListener('click', () => {
-    // 1. Bouton "Mixte"
-    startQuiz('mixte'); 
+    if (document.getElementById('start-mixte-quiz-btn')) {
+        document.getElementById('start-mixte-quiz-btn').addEventListener('click', () => {
+            console.log("Clic sur Mixte détecté."); 
+            startQuiz('mixte'); 
+        });
+    }
+
+    if (document.getElementById('start-qcm-btn')) {
+        document.getElementById('start-qcm-btn').addEventListener('click', () => {
+            console.log("Clic sur QCM détecté."); 
+            startQuiz('qcm'); 
+        });
+    }
+
+    if (document.getElementById('start-paragraphe-btn')) {
+        document.getElementById('start-paragraphe-btn').addEventListener('click', () => {
+            console.log("Clic sur Paragraphe détecté."); 
+            startQuiz('paragraphe'); 
+        });
+    }
+
+    if (document.getElementById('start-dictation-btn')) {
+        document.getElementById('start-dictation-btn').addEventListener('click', () => {
+            console.log("Clic sur Dictée détecté."); 
+            startQuiz('dictation'); 
+        });
+    }
+
+    if (document.getElementById('start-spot-error-btn')) {
+        document.getElementById('start-spot-error-btn').addEventListener('click', () => {
+            console.log("Clic sur Trouver l'Erreur détecté."); 
+            startQuiz('spot_error'); 
+        });
+    }
+    
+    // 5. AUTRES BOUTONS ET MISE À JOUR INITIALE
+    // Le bouton "Question Suivante"
+    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+
+    // Mise à jour de l'état initial
+    updateSelectedBox();
+    updateStartButtonsVisibility(); // Cette fonction est CRITIQUE !
 });
-
-    document.getElementById('start-qcm-btn').addEventListener('click', () => {
-    // 2. Bouton "QCM"
-    startQuiz('qcm'); 
-});
-
-    document.getElementById('start-paragraphe-btn').addEventListener('click', () => {
-    // 3. Bouton "Paragraphe"
-    startQuiz('paragraphe'); 
-});
-
-    document.getElementById('start-dictation-btn').addEventListener('click', () => {
-    // 4. Bouton "Dictée"
-    startQuiz('dictation'); 
-});
-
-    document.getElementById('start-spot-error-btn').addEventListener('click', () => {
-    // 5. Bouton "Trouver l'Erreur" (Hypothèse du type 'spot_error')
-    startQuiz('spot_error'); 
-});
-    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
-    updateSelectedBox();
-    updateStartButtonsVisibility();
-    
-}); // C'est la SEULE et UNIQUE fermeture de ce bloc.
 
 function renderMenu() {
     const menuContainer = document.getElementById('menu-container');
