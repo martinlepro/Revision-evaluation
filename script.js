@@ -426,6 +426,7 @@ function getItemPath(matiere, subMatiere, item) {
 // --- Nouvelle Fonction : GESTION DU STYLE ET DES DONNÉES ---
 
 function toggleSelection(checkbox) {
+    console.log("toggleSelection exécutée pour:", checkbox.dataset.name, "Checked:", checkbox.checked);
     // 1. GÉRER LE STYLE VISUEL (Corrige le problème de couleur/bouton "pas normal")
     // Trouve l'élément <li> parent le plus proche, où la classe 'selected' est appliquée
     const listItem = checkbox.closest('li');
