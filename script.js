@@ -275,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('start-mixte-quiz-btn')) {
         document.getElementById('start-mixte-quiz-btn').addEventListener('click', () => {
+            console.log("✅ BOUTON CLIC: Démarrage du Quiz 'mixte'."); 
             console.log("Clic sur Mixte détecté."); 
             startQuiz('mixte'); 
         });
@@ -282,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('start-qcm-btn')) {
         document.getElementById('start-qcm-btn').addEventListener('click', () => {
+            console.log("✅ BOUTON CLIC: Démarrage du Quiz 'qcm'."); 
             console.log("Clic sur QCM détecté."); 
             startQuiz('qcm'); 
         });
@@ -528,6 +530,7 @@ function parseMarkdown(text) {
 // --- LOGIQUE DE GÉNÉRATION ET DÉMARRAGE ---
 // Définition des constantes pour le nombre de questions
 async function startQuiz(quizType = 'mixte') {
+    console.log(`[START] Fonction startQuiz() lancée pour le type : ${quizType}`);
     // ----------------------------------------------------------------------
     // ÉTAPE 1 : INITIALISATION ET VÉRIFICATION
     // ----------------------------------------------------------------------
@@ -540,9 +543,15 @@ async function startQuiz(quizType = 'mixte') {
     
     document.getElementById('quiz-view').style.display = 'block';
     if (selectedItems.length === 0) {
+        // Log en cas d'échec critique : aucun sujet sélectionné
+        console.error("[START] ÉCHEC: Aucun sujet sélectionné. Retour au menu.");
         alert("Veuillez sélectionner au moins un sujet de révision.");
         return;
     }
+    
+    // Log de succès avant le chargement (cela confirme que nous allons bien continuer)
+    console.log(`[START] SUCCÈS: ${selectedItems.length} sujet(s) sélectionné(s). Début du chargement des fichiers.`);
+
     
     // Réinitialisation de toutes les données de la session précédente
     currentQuizData = [];
