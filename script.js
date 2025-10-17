@@ -256,69 +256,93 @@ const STRUCTURE = {
 
 // --- DÉBUT DU BLOC UNIQUE DOMContentLoaded ---
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // 1. INITIALISATION DE L'ÉLÉMENT DE DÉBOGAGE
-    debugElement = document.getElementById('debug');
-    
-    // 2. AFFICHAGE DES LOGS DE VERSION DANS LA CONSOLE
-    if (debugElement) {
-        console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
-        console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
-        console.log("script.js chargé. Logging personnalisé actif.");
-    }
+    
+    // 1. INITIALISATION DE L'ÉLÉMENT DE DÉBOGAGE
+    debugElement = document.getElementById('debug');
+    
+    // 2. AFFICHAGE DES LOGS DE VERSION DANS LA CONSOLE
+    if (debugElement) {
+        console.info(`[VERSION] Déploiement actif : ${VERSION_INFO}`);
+        console.info(`[RENDER] API de génération : ${GENERATION_API_URL}`);
+        console.log("script.js chargé. Logging personnalisé actif.");
+    }
 
-    // 3. RENDU DU MENU (DOIT ÊTRE FAIT AVANT D'ASSOCIER LES ÉCOUTEURS DE CLIC)
-    renderMenu();
+    // 3. RENDU DU MENU (DOIT ÊTRE FAIT AVANT D'ASSOCIER LES ÉCOUTEURS DE CLIC)
+    renderMenu();
 
-    // 4. ASSOCIATION DES BOUTONS DE DÉMARRAGE (LA VRAIE CORRECTION)
-    console.log("Configuration des boutons de quiz...");
+    // 4. ASSOCIATION DES BOUTONS DE DÉMARRAGE (LA VRAIE CORRECTION)
+    console.log("Configuration des boutons de quiz...");
+    // 🚨 NOUVEAU LOG DE CONTRÔLE CRITIQUE
+    console.log("--- Démarrage de la vérification des IDs de boutons ---"); 
 
-    if (document.getElementById('start-mixte-quiz-btn')) {
-        document.getElementById('start-mixte-quiz-btn').addEventListener('click', () => {
-            console.log("✅ BOUTON CLIC: Démarrage du Quiz 'mixte'."); 
-            console.log("Clic sur Mixte détecté."); 
-            startQuiz('mixte'); 
-        });
-    }
+    // --- Mixte ---
+    const mixteBtn = document.getElementById('start-mixte-quiz-btn');
+    if (mixteBtn) {
+        console.log("✅ ID TROUVÉ: start-mixte-quiz-btn. Attachement de l'écouteur.");
+        mixteBtn.addEventListener('click', () => {
+            console.log("🔥 Clic Intercepté: Démarrage du Quiz 'mixte'."); 
+            startQuiz('mixte'); 
+        });
+    } else {
+        console.error("❌ ID MANQUANT: start-mixte-quiz-btn. Vérifiez l'ID dans votre HTML.");
+    }
 
-    if (document.getElementById('start-qcm-btn')) {
-        document.getElementById('start-qcm-btn').addEventListener('click', () => {
-            console.log("✅ BOUTON CLIC: Démarrage du Quiz 'qcm'."); 
-            console.log("Clic sur QCM détecté."); 
-            startQuiz('qcm'); 
-        });
-    }
+    // --- QCM ---
+    const qcmBtn = document.getElementById('start-qcm-btn');
+    if (qcmBtn) {
+        console.log("✅ ID TROUVÉ: start-qcm-btn. Attachement de l'écouteur.");
+        qcmBtn.addEventListener('click', () => {
+            console.log("🔥 Clic Intercepté: Démarrage du Quiz 'qcm'."); 
+            startQuiz('qcm'); 
+        });
+    } else {
+        console.error("❌ ID MANQUANT: start-qcm-btn. Vérifiez l'ID dans votre HTML.");
+    }
 
-    if (document.getElementById('start-paragraphe-btn')) {
-        document.getElementById('start-paragraphe-btn').addEventListener('click', () => {
-            console.log("Clic sur Paragraphe détecté."); 
-            startQuiz('paragraphe'); 
-        });
-    }
+    // --- Paragraphe ---
+    const paragrapheBtn = document.getElementById('start-paragraphe-btn');
+    if (paragrapheBtn) {
+        console.log("✅ ID TROUVÉ: start-paragraphe-btn. Attachement de l'écouteur.");
+        paragrapheBtn.addEventListener('click', () => {
+            console.log("🔥 Clic Intercepté: Démarrage du Quiz 'paragraphe'."); 
+            startQuiz('paragraphe'); 
+        });
+    } else {
+        console.error("❌ ID MANQUANT: start-paragraphe-btn. Vérifiez l'ID dans votre HTML.");
+    }
 
-    if (document.getElementById('start-dictation-btn')) {
-        document.getElementById('start-dictation-btn').addEventListener('click', () => {
-            console.log("Clic sur Dictée détecté."); 
-            startQuiz('dictation'); 
-        });
-    }
+    // --- Dictée ---
+    const dictationBtn = document.getElementById('start-dictation-btn');
+    if (dictationBtn) {
+        console.log("✅ ID TROUVÉ: start-dictation-btn. Attachement de l'écouteur.");
+        dictationBtn.addEventListener('click', () => {
+            console.log("🔥 Clic Intercepté: Démarrage du Quiz 'dictation'."); 
+            startQuiz('dictation'); 
+        });
+    } else {
+        console.error("❌ ID MANQUANT: start-dictation-btn. Vérifiez l'ID dans votre HTML.");
+    }
 
-    if (document.getElementById('start-spot-error-btn')) {
-        document.getElementById('start-spot-error-btn').addEventListener('click', () => {
-            console.log("Clic sur Trouver l'Erreur détecté."); 
-            startQuiz('spot_error'); 
-        });
-    }
-    
-    // 5. AUTRES BOUTONS ET MISE À JOUR INITIALE
-    // Le bouton "Question Suivante"
-    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+    // --- Trouver l'Erreur ---
+    const spotErrorBtn = document.getElementById('start-spot-error-btn');
+    if (spotErrorBtn) {
+        console.log("✅ ID TROUVÉ: start-spot-error-btn. Attachement de l'écouteur.");
+        spotErrorBtn.addEventListener('click', () => {
+            console.log("🔥 Clic Intercepté: Démarrage du Quiz 'spot_error'."); 
+            startQuiz('spot_error'); 
+        });
+    } else {
+        console.error("❌ ID MANQUANT: start-spot-error-btn. Vérifiez l'ID dans votre HTML.");
+    }
+    
+    // 5. AUTRES BOUTONS ET MISE À JOUR INITIALE
+    // Le bouton "Question Suivante"
+    document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
 
-    // Mise à jour de l'état initial
-    updateSelectedBox();
-    updateStartButtonsVisibility(); // Cette fonction est CRITIQUE !
+    // Mise à jour de l'état initial
+    updateSelectedBox();
+    updateStartButtonsVisibility(); // Cette fonction est CRITIQUE !
 });
-
 function renderMenu() {
     const menuContainer = document.getElementById('menu-container');
     let html = '';
