@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Mise à jour de l'état initial
     updateSelectedBox();
-    updateStartButtonsVisibility(); // Cette fonction est CRITIQUE !
+    //updateStartButtonsVisibility(); // Cette fonction est CRITIQUE !
 });
 function renderMenu() {
     const menuContainer = document.getElementById('menu-container');
