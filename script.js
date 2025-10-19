@@ -275,23 +275,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // 🚨 NOUVEAU LOG DE CONTRÔLE CRITIQUE
     console.log("--- Démarrage de la vérification des IDs de boutons ---"); 
 
-    // --- Mixte ---
-// ... dans votre bloc DOMContentLoaded ...
 
-// --- Mixte ---
    const mixteBtn = document.getElementById('start-mixte-quiz-btn');
    if (mixteBtn) {
        console.log("✅ ID TROUVÉ: start-mixte-quiz-btn. Attachement de l'écouteur.");
-    // 🛑 NOUVEAU CODE D'ÉCOUTEUR TRÈS SIMPLE POUR LE TEST
-       mixteBtn.addEventListener('click', (event) => {
-        event.preventDefault(); // Empêche l'action par défaut (au cas où)
-        console.error("🔥 CLIC BRUT ENREGISTRÉ ! LE PROBLÈME EST LA FONCTION startQuiz() !"); 
+       // 🛑 REMPLACER LE CODE DE TEST BRUT PAR CECI
+       mixteBtn.addEventListener('click', () => {
+           // Log de production pour confirmer que l'écouteur fonctionne
+           console.log("🔥 Clic Intercepté: Démarrage du Quiz 'mixte'."); 
+        
+           try {
+               // L'appel CRITIQUE à la fonction de démarrage
+               startQuiz('mixte'); 
+           } catch (e) {
+            // Ce bloc est une sécurité pour les erreurs synchrones
+               console.error("ERREUR SYNCHRONE FATALE lors de l'appel à startQuiz('mixte'):", e);
+               showError("Une erreur interne critique est survenue au démarrage du quiz.");
+           }
        });
    } else {
-       console.error("❌ ID MANQUANT: start-mixte-quiz-btn. Vérifiez l'ID dans votre HTML.");
-   }
-
-// ... Laissez les autres boutons comme ils sont (start-qcm-btn, etc.)
 
     // --- QCM ---
     const qcmBtn = document.getElementById('start-qcm-btn');
