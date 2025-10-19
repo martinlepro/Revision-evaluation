@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                showError("Une erreur interne critique est survenue au démarrage du quiz.");
            }
        });
-   } else {
+   } // <--- CORRECTION CRITIQUE: RETRAIT DU 'else {' ICI
 
     // --- QCM ---
     const qcmBtn = document.getElementById('start-qcm-btn');
@@ -394,18 +394,16 @@ function checkQCMAnswer() {
     const currentQuestion = currentQuizData[currentQuestionIndex];
     const correctionFeedbackDiv = document.getElementById('correction-feedback');
     const questionType = currentQuestion.type ? currentQuestion.type.toLowerCase() : '';
-
     // Détermine le nom de l'élément HTML (QCM ou Vrai/Faux)
     const radioName = (questionType === 'qcm' || questionType === 'mcq') ? 'qcm_answer' : 'vrai_faux_answer';
-    
     // Récupère l'option sélectionnée par l'utilisateur
     const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
-    
+
     if (!selectedRadio) {
         alert("Veuillez sélectionner une option avant de valider la réponse !");
         return;
     }
-    
+
     const userAnswer = selectedRadio.value;
     const correctAnswer = currentQuestion.answer;
     const maxPoints = currentQuestion.maxPoints || 1;
@@ -424,9 +422,8 @@ function checkQCMAnswer() {
     // Affichage de la correction
     feedbackHTML += `<p>La bonne réponse était : **${correctAnswer}**.</p>`;
     feedbackHTML += `<p>Explication : ${currentQuestion.explanation || "Aucune explication fournie par l'IA."}</p>`;
-
     correctionFeedbackDiv.innerHTML = feedbackHTML;
-    
+
     // Désactiver tous les boutons radio après la validation pour éviter de changer la réponse
     document.querySelectorAll(`input[name="${radioName}"]`).forEach(radio => {
         radio.disabled = true;
@@ -440,31 +437,26 @@ function checkQCMAnswer() {
     // Masque le bouton de validation et affiche le bouton "Question Suivante"
     const validateButton = document.querySelector(`div.${questionType}-question button`);
     if (validateButton) validateButton.style.display = 'none';
-
     document.getElementById('next-question-btn').style.display = 'block';
 }
 
-// --- NOUVELLE FONCTION : GESTION DE L'INTERFACE DE DÉMARRAGE ---
+// --- NOUVELLE FONCTION : GESTION DE L'INTERFACE DE DÉMARRAGE --- 
 function updateStartButtonsVisibility() {
     // Vérifie si le tableau des sujets sélectionnés n'est pas vide
-    const isItemSelected = selectedItems.length > 0; 
-    
+    const isItemSelected = selectedItems.length > 0;
+
     // Sélectionne tous les boutons qui ont la classe 'start-btn'
-    const startButtons = document.querySelectorAll('.start-btn'); 
-    
+    const startButtons = document.querySelectorAll('.start-btn');
+
     // Met à jour l'attribut 'disabled' et l'opacité pour le feedback visuel
     startButtons.forEach(button => {
-        button.disabled = !isItemSelected; 
+        button.disabled = !isItemSelected;
         button.style.opacity = isItemSelected ? 1.0 : 0.5;
     });
 
     // Mise à jour de la boîte de sélection visuelle
-    document.getElementById('selected-box').style.backgroundColor = isItemSelected ? '#d4edda' : '#e9ecef'; // Couleur verte si sélectionné
-    document.getElementById('selected-items').textContent = isItemSelected ? selectedItems.map(i => i.name).join(', ') : 'Aucun sujet sélectionné.';
+    document.getElementById('selected-box').style.backgroundColor = isItemSelected ? '#d4edda' : '#e9ecef';
 }
-
-// ... (Le reste de vos fonctions comme startQuiz, displayCurrentQuestion, etc.)
-
 function getItemPath(matiere, subMatiere, item) {
     // CORRECTION : On utilise SIMPLEMENT la valeur déjà formatée dans item.file
     // Elle contient déjà : "Anglais/Culture/Les pays anglophones.txt"
