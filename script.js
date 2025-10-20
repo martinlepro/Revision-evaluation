@@ -391,18 +391,25 @@ function renderMenu() {
  * Met à jour le score de l'utilisateur et affiche la correction.
  */
 function checkQCMAnswer() {
-    const currentQuestion = currentQuizData[currentQuestionIndex];
-    const correctionFeedbackDiv = document.getElementById('correction-feedback');
-    const questionType = currentQuestion.type ? currentQuestion.type.toLowerCase() : '';
+    const currentQuestion = currentQuizData[currentQuestionIndex];
+    const correctionFeedbackDiv = document.getElementById('correction-feedback');
+    const questionType = currentQuestion.type ? currentQuestion.type.toLowerCase() : '';
+    
     // Détermine le nom de l'élément HTML (QCM ou Vrai/Faux)
-    const radioName = (questionType === 'qcm' || questionType === 'mcq') ? 'qcm_answer' : 'vrai_faux_answer';
+    // Pour une question 'mcq', 'radioName' sera 'qcm_answer'
+    const radioName = (questionType === 'qcm' || questionType === 'mcq') ? 'qcm_answer' : 'vrai_faux_answer';
+    
+    // 🚨 NOUVELLE LIGNE DE DÉBOGAGE : Vérifiez ce qui est recherché !
+    console.log(`[CHECK] Tentative de vérifier la réponse pour le nom de radio : ${radioName}`);
+    
     // Récupère l'option sélectionnée par l'utilisateur
-    const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
+    const selectedRadio = document.querySelector(`input[name="${radioName}"]:checked`);
 
-    if (!selectedRadio) {
-        alert("Veuillez sélectionner une option avant de valider la réponse !");
-        return;
-    }
+    if (!selectedRadio) {
+        console.error(`[CHECK] ÉCHEC: Aucun radio bouton coché trouvé avec name="${radioName}".`);
+        alert("Veuillez sélectionner une option avant de valider la réponse !");
+        return;
+    }
 
     const userAnswer = selectedRadio.value;
     const correctAnswer = currentQuestion.answer;
