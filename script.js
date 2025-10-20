@@ -1011,7 +1011,7 @@ function displayCurrentQuestion() {
                             </label>
                         `).join('')}
                     </div>
-                    <button onclick="checkFreeTextAnswer()">Valider et Afficher la Correction</button>
+                    <button onclick="checkQCMAnswer()">Valider et Afficher la Correction</button>
                 </div>
             `;
             break;
