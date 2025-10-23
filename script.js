@@ -669,15 +669,33 @@ async function startQuiz(quizType = 'mixte') {
 
 // ... dans l'Étape 4 de votre startQuiz ...
 
+// ... dans l'Étape 4 de votre startQuiz (après la réception du JSON)
+
 if (questionsArray && questionsArray.length > 0) {
     // Le quiz est généré en une seule fois
     currentQuizData = questionsArray;
+    
+    // 🚨 NOUVELLE VÉRIFICATION DE SÉCURITÉ CRITIQUE
+    if (quizType === 'paragraphe_ia') {
+        currentQuizData.forEach(q => {
+            // Si l'utilisateur a demandé un paragraphe argumenté
+            // et que l'IA a fait l'erreur de renvoyer 'mcq' ou 'qcm'
+            if (q.type === 'mcq' || q.type === 'qcm') {
+                console.warn(`[CORRECTION FORCEE] Type ${q.type} remplacé par long_answer pour le quiz.`);
+                q.type = 'long_answer'; // Force le type correct
+                q.options = [];          // Supprime les options pour ne pas afficher le QCM
+                q.maxPoints = q.maxPoints > 5 ? q.maxPoints : 10; // Assure le bon score
+            }
+        });
+    }
+    // FIN DE LA VÉRIFICATION DE SÉCURITÉ
     
     // 🚨 AJOUTEZ CETTE LIGNE : Calcule le score total en additionnant les maxPoints de chaque question
     totalQuizPoints = currentQuizData.reduce((sum, q) => sum + (q.maxPoints || 1), 0);
     console.log(`Score total possible pour le quiz: ${totalQuizPoints} points.`);
     
     displayCurrentQuestion();
+} 
     } else {
         // En cas d'échec de la génération
         alert("L'IA n'a pu générer aucune question. Vérifiez votre serveur Render et votre connexion.");
