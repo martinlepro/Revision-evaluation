@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("✅ ID TROUVÉ: start-paragraphe-btn. Attachement de l'écouteur.");
         paragrapheBtn.addEventListener('click', () => {
             console.log("🔥 Clic Intercepté: Démarrage du Quiz 'paragraphe'."); 
-            startQuiz('paragraphe'); 
+            startQuiz('paragraphe_ia'); // Au lieu de startQuiz('paragraphe');
         });
     } else {
         console.error("❌ ID MANQUANT: start-paragraphe-btn. Vérifiez l'ID dans votre HTML.");
