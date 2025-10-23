@@ -690,18 +690,18 @@ if (questionsArray && questionsArray.length > 0) {
     }
     // FIN DE LA VÉRIFICATION DE SÉCURITÉ
     
-    // 🚨 AJOUTEZ CETTE LIGNE : Calcule le score total en additionnant les maxPoints de chaque question
+
     totalQuizPoints = currentQuizData.reduce((sum, q) => sum + (q.maxPoints || 1), 0);
     console.log(`Score total possible pour le quiz: ${totalQuizPoints} points.`);
-    
+
     displayCurrentQuestion();
-} 
-    } else {
-        // En cas d'échec de la génération
-        alert("L'IA n'a pu générer aucune question. Vérifiez votre serveur Render et votre connexion.");
-        document.getElementById('quiz-view').style.display = 'none';
-        document.getElementById('selection-view').style.display = 'block';
-    }
+}
+}
+else { // C'est ici que l'erreur 'Unexpected token else' est générée
+    // En cas d'échec de la génération
+    alert("L'IA n'a pu générer aucune question. Vérifiez votre serveur Render et votre connexion.");
+    document.getElementById('quiz-view').style.display = 'none';
+    document.getElementById('selection-view').style.display = 'block';
 }
     
 /**
