@@ -1327,3 +1327,4 @@ function showFinalScore() {
 
     document.getElementById('question-container').innerHTML = feedback + '<button onclick="window.location.reload()">Recommencer un quiz</button>';
 }
+}
