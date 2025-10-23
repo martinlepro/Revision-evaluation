@@ -696,7 +696,6 @@ if (questionsArray && questionsArray.length > 0) {
 
     displayCurrentQuestion();
 }
-}
 else { // C'est ici que l'erreur 'Unexpected token else' est générée
     // En cas d'échec de la génération
     alert("L'IA n'a pu générer aucune question. Vérifiez votre serveur Render et votre connexion.");
